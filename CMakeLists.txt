@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(dialogflow_emergency_action_servers)
+
+find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  actionlib_msgs
+  geometry_msgs
+  move_base_msgs
+  nav_msgs
+  pal_common_msgs
+  rospy
+  sensor_msgs
+  std_msgs
+  tf
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES TurnToHuman.action
+)
+
+generate_messages(
+  DEPENDENCIES
+    actionlib_msgs
+    std_msgs
+    geometry_msgs
+)
+
+catkin_package(
+  CATKIN_DEPENDS actionlib actionlib_msgs geometry_msgs move_base_msgs nav_msgs pal_common_msgs rospy sensor_msgs std_msgs tf
+)
+
+include_directories(${catkin_INCLUDE_DIRS})

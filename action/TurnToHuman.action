@@ -1,0 +1,9 @@
+# Goal - position for the robot to turn to
+geometry_msgs/PoseWithCovariance human_pose
+---
+# Result - which link has turned (head/torso)
+std_msgs/String status
+---
+# Feedback messages
+geometry_msgs/Quaternion orientation # current orientation of microphone
+std_msgs/String status # which link is currently rotating (head/torso)
