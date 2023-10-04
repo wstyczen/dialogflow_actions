@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 import math
 
@@ -10,57 +11,53 @@ from dialogflow_emergency_action_servers.msg import (
     TurnToHumanGoal,
     TurnToHumanResult,
 )
-from std_msgs.msg import String, Bool
+from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Twist, Quaternion, Pose
-# Action servers
-from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
+from std_msgs.msg import Bool
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from pal_common_msgs.msg import DisableAction, DisableGoal
+from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
 PI_DEGREES = 180
 PI_VALUE = 3.1415
 
 class TurnToHumanActionServer:
     def __init__(self):
-        # Init node
-        rospy.init_node("turn_to_human_action_server")
-
         # Init the action server
         self._action_server = SimpleActionServer(
             "turn_to_human", TurnToHumanAction, self.execute_callback, auto_start=False
         )
-        self._action_name = rospy.get_param("~served_action_name")
+        self._action_name = rospy.get_param("served_action_name")
 
         # Init complementary action servers
         self._joy_action_server = SimpleActionClient(
-            rospy.get_param("~joy_priority_action"), JoyPriorityAction
+            rospy.get_param("joy_priority_action"), JoyPriorityAction
         )
         self._head_action_server = SimpleActionClient(
-            rospy.get_param("~point_head_action"), PointHeadAction
+            rospy.get_param("point_head_action"), PointHeadAction
         )
         self._disable_action_server = SimpleActionClient(
-            rospy.get_param("~disable_autohead_action"), DisableAction
+            rospy.get_param("disable_autohead_action"), DisableAction
         )
 
         # Subscribers
         self._odom_subscriber = rospy.Subscriber(
-            rospy.get_param("~odometry_topic"), Odometry, self.robot_odometry_callback
+            rospy.get_param("odometry_topic"), Odometry, self.robot_odometry_callback
         )
         self._joint_state_subscriber = rospy.Subscriber(
-            rospy.get_param("~joint_state_topic"),
+            rospy.get_param("joint_state_topic"),
             JointState,
             self.robot_joint_state_callback,
         )
         self._joy_priority_subscriber = rospy.Subscriber(
-            rospy.get_param("~joy_priority_topic"), Bool, self.joy_priority_callback
+            rospy.get_param("joy_priority_topic"), Bool, self.joy_priority_callback
         )
         self._tf_listener = TransformListener()
 
         # Publishers
         self._velocity_publisher = rospy.Publisher(
-            rospy.get_param("~command_velocity_topic"), Twist, queue_size=1000
+            rospy.get_param("command_velocity_topic"), Twist, queue_size=1000
         )
 
         # Current state variables
@@ -70,20 +67,20 @@ class TurnToHumanActionServer:
 
         # Start action servers
         self._action_server.start()
-        rospy.loginfo("%s server ready", rospy.get_param("~served_action_name"))
+        rospy.loginfo("%s server ready", rospy.get_param("served_action_name"))
 
         self._head_action_server.wait_for_server()
-        rospy.loginfo("%s client ready", rospy.get_param("~point_head_action"))
+        rospy.loginfo("%s client ready", rospy.get_param("point_head_action"))
 
         self._disable_action_server.wait_for_server()
-        rospy.loginfo("%s client ready", rospy.get_param("~disable_autohead_action"))
+        rospy.loginfo("%s client ready", rospy.get_param("disable_autohead_action"))
 
-        if rospy.get_param("~use_joy_action"):
+        if rospy.get_param("use_joy_action"):
             rospy.loginfo("joy priority action is being used")
             self._joy_action_server.wait_for_server()
-            rospy.loginfo("%s client ready", rospy.get_param("~joy_priority_action"))
+            rospy.loginfo("%s client ready", rospy.get_param("joy_priority_action"))
 
-    def execute_callback(self, goal: TurnToHumanGoal) -> None:
+    def execute_callback(self, goal):
         rospy.loginfo("New goal requested")
 
         success = True;
@@ -110,53 +107,53 @@ class TurnToHumanActionServer:
         else:
           self._action_server.set_aborted()
 
-    def robot_odometry_callback(self, message: Odometry) -> None:
+    def robot_odometry_callback(self, message):
         self._current_odom = message
 
-    def robot_joint_state_callback(self, message: JointState) -> None:
+    def robot_joint_state_callback(self, message):
         self._current_joint_state = message
 
-    def joy_priority_callback(self, message: Bool) -> None:
-        if rospy.get_param("~use_joy_action"):
+    def joy_priority_callback(self, message):
+        if rospy.get_param("use_joy_action"):
             self._current_joy_priority = message
             rospy.loginfo(
                 "Current joy priority: %s", str(self._current_joy_priority.data)
             )
 
-    def publish_feedback(self, state: str) -> None:
+    def publish_feedback(self, state):
         feedback_ = TurnToHumanFeedback()
         feedback_.status = state
         feedback_.orientation = self._current_odom.pose.pose.orientation
         self._action_server.publish_feedback(feedback_)
 
-    def publish_status(self, state: str) -> None:
+    def publish_status(self, state):
         result_ = TurnToHumanResult()
         result_.status = state
         self._action_server.set_succeeded(result_)
         rospy.loginfo("%s: Succeeded", self._action_name)
 
-    def publish_torso_velocity_command(self, angular_velocity: float) -> None:
+    def publish_torso_velocity_command(self, angular_velocity):
         velocity = Twist()
         velocity.angular.z = angular_velocity
         self._velocity_publisher.publish(velocity)
 
-    def call_joy_priority_action(self) -> None:
+    def call_joy_priority_action(self):
         goal = JoyPriorityGoal()
         self._joy_action_server.send_goal(goal)
 
-    def find_required_angle(self) -> float:
+    def find_required_angle(self):
         tf = self._tf_listener.lookupTransform(
-            rospy.get_param("~human_tf"), rospy.get_param("~base_link"), rospy.Time(0)
+            rospy.get_param("human_tf"), rospy.get_param("base_link"), rospy.Time(0)
         )
         tfi = tf.inverse()
         return math.atan2(tfi.getOrigin().y(), tfi.getOrigin().x())
 
-    def move_torso(self) -> bool:
+    def move_torso(self):
         success = True
         locked_state = self._current_joy_priority.data
         r = rospy.Rate(30)
 
-        velocity = rospy.get_param("~torso_turning_velocity")
+        velocity = rospy.get_param("torso_turning_velocity")
         initial_angle = self.find_required_angle()
 
         if not locked_state:
@@ -208,10 +205,10 @@ class TurnToHumanActionServer:
     def move_head(self):
         goal = PointHeadGoal()
         pose = self.get_pose(
-            rospy.get_param("~human_tf"), rospy.get_param("~base_link")
+            rospy.get_param("human_tf"), rospy.get_param("base_link")
         )
         rospy.loginfo("%f %f %f", pose.position.x, pose.position.y, pose.position.z)
-        goal.target.header.frame_id = rospy.get_param("~base_link")
+        goal.target.header.frame_id = rospy.get_param("base_link")
         goal.target.point.x = pose.position.x
         goal.target.point.y = pose.position.y
         goal.target.point.z = pose.position.z
@@ -221,7 +218,7 @@ class TurnToHumanActionServer:
         goal.pointing_frame = rospy.get_param(
             "/head_controller/point_head_action/tilt_link"
         )
-        goal.max_velocity = rospy.get_param("~head_turning_velocity")
+        goal.max_velocity = rospy.get_param("head_turning_velocity")
         self._head_action_server.send_goal(goal)
         self._head_action_server.wait_for_result(rospy.Duration(1.0))
         return True
@@ -238,6 +235,16 @@ class TurnToHumanActionServer:
         goal.pointing_frame = rospy.get_param(
             "/head_controller/point_head_action/tilt_link"
         )
-        goal.max_velocity = rospy.get_param("~head_turning_velocity")
+        goal.max_velocity = rospy.get_param("head_turning_velocity")
         self._head_action_server.send_goal(goal)
         self._head_action_server.wait_for_result(rospy.Duration(1.0))
+
+
+def run_server(args=None):
+    # Initialize the node and create the server instance
+    rospy.init_node("turn_to_human_action_server")
+    TurnToHumanActionServer()
+    rospy.spin()
+
+if __name__ == '__main__':
+    run_server()
