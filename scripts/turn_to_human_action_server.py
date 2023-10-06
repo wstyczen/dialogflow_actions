@@ -4,6 +4,7 @@ import math
 
 from actionlib import SimpleActionClient, SimpleActionServer
 from tf import TransformListener
+
 # Msgs
 from dialogflow_emergency_action_servers.msg import (
     TurnToHumanAction,
@@ -19,16 +20,23 @@ from control_msgs.msg import PointHeadAction, PointHeadGoal
 from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
+from logger import ActionServerLogger
+
 PI_DEGREES = 180
 PI_VALUE = 3.1415
 
+
 class TurnToHumanActionServer:
     def __init__(self):
+        # Create logger
+        self._logger = ActionServerLogger(ActionServerLogger.Action.TURN_TO_HUMAN)
+        self._action_name = rospy.get_param("served_action_name")
+        self._logger.log("Initializing %s." % self._action_name)
+
         # Init the action server
         self._action_server = SimpleActionServer(
             "turn_to_human", TurnToHumanAction, self.execute_callback, auto_start=False
         )
-        self._action_name = rospy.get_param("served_action_name")
 
         # Init complementary action servers
         self._joy_action_server = SimpleActionClient(
@@ -67,45 +75,55 @@ class TurnToHumanActionServer:
 
         # Start action servers
         self._action_server.start()
-        rospy.loginfo("%s server ready", rospy.get_param("served_action_name"))
+        self._logger.log("%s server ready." % self._action_name)
 
         self._head_action_server.wait_for_server()
-        rospy.loginfo("%s client ready", rospy.get_param("point_head_action"))
+        self._logger.log("%s client ready." % rospy.get_param("point_head_action"))
 
         self._disable_action_server.wait_for_server()
-        rospy.loginfo("%s client ready", rospy.get_param("disable_autohead_action"))
+        self._logger.log(
+            "%s client ready." % rospy.get_param("disable_autohead_action")
+        )
 
-        if rospy.get_param("use_joy_action"):
-            rospy.loginfo("joy priority action is being used")
+        use_joy_action = rospy.get_param("use_joy_action")
+        self._logger.log("Use joy priority action: %s." % str(use_joy_action))
+        if use_joy_action:
             self._joy_action_server.wait_for_server()
-            rospy.loginfo("%s client ready", rospy.get_param("joy_priority_action"))
+            self._logger.log(
+                "%s client ready." % rospy.get_param("joy_priority_action")
+            )
 
     def execute_callback(self, goal):
-        rospy.loginfo("New goal requested")
+        self._logger.log("New goal requested.")
 
-        success = True;
+        success = True
         goal = DisableGoal()
         self._disable_action_server.send_goal(goal)
 
         required_angle = self.find_required_angle()
-        rospy.loginfo("Desired change in yaw: %f degrees", (PI_DEGREES*required_angle)/PI_VALUE)
+        self._logger.log(
+            "Desired change in yaw: %f degrees." %
+            ((PI_DEGREES * required_angle) / PI_VALUE),
+        )
 
         # If possible, move just the head to face the speaker. If the angle is
         # out of its range of motion move the torso.
         max_head_rotation_radian = rospy.get_param("max_head_rotation")
         if abs(required_angle) > max_head_rotation_radian:
-            rospy.loginfo("Moving torso")
+            self._logger.log("Moving torso.")
             success = self.move_torso()
         else:
-            rospy.loginfo("Moving head")
+            self._logger.log("Moving head.")
             success = self.move_head()
 
-        rospy.loginfo("Finished executing.")
+        self._logger.log("Finished execution.")
 
         if success:
-          self.publish_status("finished")
+            self.publish_status("finished")
+            rospy.loginfo("%s: succeeded." % self._action_name)
         else:
-          self._action_server.set_aborted()
+            self._action_server.set_aborted()
+            rospy.loginfo("%s: aborted." % self._action_name)
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
@@ -116,8 +134,8 @@ class TurnToHumanActionServer:
     def joy_priority_callback(self, message):
         if rospy.get_param("use_joy_action"):
             self._current_joy_priority = message
-            rospy.loginfo(
-                "Current joy priority: %s", str(self._current_joy_priority.data)
+            self._logger.log(
+                "Current joy priority: %s." % str(self._current_joy_priority.data)
             )
 
     def publish_feedback(self, state):
@@ -130,7 +148,6 @@ class TurnToHumanActionServer:
         result_ = TurnToHumanResult()
         result_.status = state
         self._action_server.set_succeeded(result_)
-        rospy.loginfo("%s: Succeeded", self._action_name)
 
     def publish_torso_velocity_command(self, angular_velocity):
         velocity = Twist()
@@ -161,7 +178,7 @@ class TurnToHumanActionServer:
 
         while not rospy.is_shutdown():
             if self._action_server.is_preempt_requested() or rospy.is_shutdown():
-                rospy.loginfo("%s: Preempted", self._action_name)
+                self._logger.log("%s: preempted." % self._action_name)
                 self._action_server.set_preempted()
                 self._head_action_server.stop_tracking_goal()
                 success = False
@@ -204,10 +221,7 @@ class TurnToHumanActionServer:
 
     def move_head(self):
         goal = PointHeadGoal()
-        pose = self.get_pose(
-            rospy.get_param("human_tf"), rospy.get_param("base_link")
-        )
-        rospy.loginfo("%f %f %f", pose.position.x, pose.position.y, pose.position.z)
+        pose = self.get_pose(rospy.get_param("human_tf"), rospy.get_param("base_link"))
         goal.target.header.frame_id = rospy.get_param("base_link")
         goal.target.point.x = pose.position.x
         goal.target.point.y = pose.position.y
@@ -246,5 +260,6 @@ def run_server(args=None):
     TurnToHumanActionServer()
     rospy.spin()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_server()
