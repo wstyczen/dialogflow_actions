@@ -9,7 +9,6 @@ from tf import TransformListener
 from dialogflow_emergency_action_servers.msg import (
     TurnToHumanAction,
     TurnToHumanFeedback,
-    TurnToHumanGoal,
     TurnToHumanResult,
 )
 from geometry_msgs.msg import Twist, Pose
@@ -20,7 +19,7 @@ from control_msgs.msg import PointHeadAction, PointHeadGoal
 from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
-from logger import ActionServerLogger
+from logger import ActionServerLogger, Action, LogLevel
 
 PI_DEGREES = 180
 PI_VALUE = 3.1415
@@ -28,14 +27,19 @@ PI_VALUE = 3.1415
 
 class TurnToHumanActionServer:
     def __init__(self):
+        self._initialized = False
+
         # Create logger
-        self._logger = ActionServerLogger(ActionServerLogger.Action.TURN_TO_HUMAN)
-        self._action_name = rospy.get_param("served_action_name")
-        self._logger.log("Initializing %s." % self._action_name)
+        self._logger = ActionServerLogger(Action.TURN_TO_HUMAN)
+        self._action_name = rospy.get_param("turn_to_human_action_name")
+        self._logger.log("Initializing %s server." % self._action_name)
 
         # Init the action server
         self._action_server = SimpleActionServer(
-            "turn_to_human", TurnToHumanAction, self.execute_callback, auto_start=False
+            self._action_name,
+            TurnToHumanAction,
+            self.execute_callback,
+            auto_start=False,
         )
 
         # Init complementary action servers
@@ -77,9 +81,15 @@ class TurnToHumanActionServer:
         self._action_server.start()
         self._logger.log("%s server ready." % self._action_name)
 
+        self._logger.log(
+            "Waiting for %s client..." % rospy.get_param("point_head_action")
+        )
         self._head_action_server.wait_for_server()
         self._logger.log("%s client ready." % rospy.get_param("point_head_action"))
 
+        self._logger.log(
+            "Waiting for %s client..." % rospy.get_param("disable_autohead_action")
+        )
         self._disable_action_server.wait_for_server()
         self._logger.log(
             "%s client ready." % rospy.get_param("disable_autohead_action")
@@ -88,13 +98,23 @@ class TurnToHumanActionServer:
         use_joy_action = rospy.get_param("use_joy_action")
         self._logger.log("Use joy priority action: %s." % str(use_joy_action))
         if use_joy_action:
+            self._logger.log(
+                "Waiting for %s server..." % rospy.get_param("joy_priority_action")
+            )
             self._joy_action_server.wait_for_server()
             self._logger.log(
                 "%s client ready." % rospy.get_param("joy_priority_action")
             )
 
+        self._initialized = True
+        self._logger.log("%s server initialization complete." % self._action_name)
+
     def execute_callback(self, goal):
         self._logger.log("New goal requested.")
+
+        if not self._initialized:
+            self._logger.log("Server not ready, ignoring request.", LogLevel.WARNING)
+            return
 
         success = True
         goal = DisableGoal()
@@ -102,8 +122,8 @@ class TurnToHumanActionServer:
 
         required_angle = self.find_required_angle()
         self._logger.log(
-            "Desired change in yaw: %f degrees." %
-            ((PI_DEGREES * required_angle) / PI_VALUE),
+            "Desired change in yaw: %f degrees."
+            % ((PI_DEGREES * required_angle) / PI_VALUE),
         )
 
         # If possible, move just the head to face the speaker. If the angle is
@@ -145,9 +165,9 @@ class TurnToHumanActionServer:
         self._action_server.publish_feedback(feedback_)
 
     def publish_status(self, state):
-        result_ = TurnToHumanResult()
-        result_.status = state
-        self._action_server.set_succeeded(result_)
+        result = TurnToHumanResult()
+        result.status = state
+        self._action_server.set_succeeded(result)
 
     def publish_torso_velocity_command(self, angular_velocity):
         velocity = Twist()
@@ -254,7 +274,7 @@ class TurnToHumanActionServer:
         self._head_action_server.wait_for_result(rospy.Duration(1.0))
 
 
-def run_server(args=None):
+def run_server():
     # Initialize the node and create the server instance
     rospy.init_node("turn_to_human_action_server")
     TurnToHumanActionServer()

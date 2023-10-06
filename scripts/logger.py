@@ -11,15 +11,16 @@ def get_time_str():
     return datetime.now().strftime("%H:%M:%S")
 
 
+class LogLevel(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
 class Logger(object):
     PACKAGE_NAME = "dialogflow_emergency_action_servers"
     PACKAGE_PATH = RosPack().get_path(PACKAGE_NAME)
     LOGS_DIRECTORY = "logs"
-
-    class Level(str, Enum):
-        INFO = "INFO"
-        WARNING = "WARNING"
-        ERROR = "ERROR"
 
     def __init__(self, module_name, save_logs_to_file=True):
         self._module_name = module_name
@@ -27,7 +28,7 @@ class Logger(object):
         self._init_timestamp = datetime.now()
         self._file_name = self.get_file_name()
 
-    def log(self, contents, level=Level.INFO):
+    def log(self, contents, level=LogLevel.INFO):
         self.output_to_screen(contents, level)
         if self._save_logs_to_file:
             self.output_to_file(contents, level)
@@ -38,7 +39,7 @@ class Logger(object):
     def get_file_name(self):
         return "%s_%s.log" % (
             self._module_name,
-            self._init_timestamp.strftime("%H_%M_%S_%f"),
+            self._init_timestamp.strftime("%H_%M_%S"),
         )
 
     def get_file_path(self):
@@ -46,11 +47,11 @@ class Logger(object):
 
     def output_to_screen(self, contents, level):
         msg = "[%s]: %s" % (self._module_name, contents)
-        if level == Logger.Level.INFO:
+        if level == LogLevel.INFO:
             rospy.loginfo(msg)
-        elif level == Logger.Level.WARNING:
+        elif level == LogLevel.WARNING:
             rospy.logwarn(msg)
-        elif level == Logger.Level.ERROR:
+        elif level == LogLevel.ERROR:
             rospy.logerr(msg)
         else:
             assert False, "Invalid log level."
@@ -64,16 +65,19 @@ class Logger(object):
             logs_file.write("[%s] [%s]: %s\n" % (level.value, get_time_str(), contents))
 
 
-class ActionServerLogger(Logger):
-    class Action(str, Enum):
-        TURN_TO_HUMAN = "turn_to_human"
-        MOVE_TO_HUMAN = "move_to_human"
+class Action(str, Enum):
+    TURN_TO_HUMAN = "turn_to_human"
+    MOVE_TO_HUMAN = "move_to_human"
 
+
+class ActionServerLogger(Logger):
     def __init__(self, action):
-        super(ActionServerLogger, self).__init__(action.value)
+        super(ActionServerLogger, self).__init__("%s_server" % action.value)
         self._action = action
 
 
-class ActionClientLogger:
-    pass
+class ActionClientLogger(Logger):
     # Make it an observer to the Client, an print status change on change of feedback ??
+    def __init__(self, action):
+        super(ActionClientLogger, self).__init__("%s_client" % action.value)
+        self._action = action

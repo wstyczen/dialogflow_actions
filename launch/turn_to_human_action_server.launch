@@ -9,7 +9,7 @@
     <param name="joy_priority_action" type="string" value="/joy_priority_action" />
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
     <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
-    <param name="served_action_name" type="string" value="/turn_to_human_action" />
+    <param name="turn_to_human_action_name" type="string" value="/turn_to_human" />
     <param name="use_joy_action" type="bool" value="true" />
     <param name="human_tf" type="string" value="$(arg human_tf)" />
     <param name="torso_turning_velocity" type="double" value="0.6" />
