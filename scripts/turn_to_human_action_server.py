@@ -3,6 +3,7 @@ import rospy
 import math
 
 from actionlib import SimpleActionClient, SimpleActionServer
+import tf
 from tf import TransformListener
 
 # Msgs
@@ -11,12 +12,12 @@ from dialogflow_emergency_action_servers.msg import (
     TurnToHumanFeedback,
     TurnToHumanResult,
 )
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Transform
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from control_msgs.msg import PointHeadAction, PointHeadGoal
-from pal_common_msgs.msg import DisableAction, DisableGoal
+# from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
 from logger import ActionServerLogger, Action, LogLevel
@@ -31,7 +32,7 @@ class TurnToHumanActionServer:
 
         # Create logger
         self._logger = ActionServerLogger(Action.TURN_TO_HUMAN)
-        self._action_name = rospy.get_param("turn_to_human_action_name")
+        self._action_name = rospy.get_param("action_name")
         self._logger.log("Initializing %s server." % self._action_name)
 
         # Init the action server
@@ -41,6 +42,7 @@ class TurnToHumanActionServer:
             self.execute_callback,
             auto_start=False,
         )
+        self._action_server.start()
 
         # Init complementary action servers
         self._joy_action_server = SimpleActionClient(
@@ -49,9 +51,9 @@ class TurnToHumanActionServer:
         self._head_action_server = SimpleActionClient(
             rospy.get_param("point_head_action"), PointHeadAction
         )
-        self._disable_action_server = SimpleActionClient(
-            rospy.get_param("disable_autohead_action"), DisableAction
-        )
+        # self._disable_action_server = SimpleActionClient(
+        #     rospy.get_param("disable_autohead_action"), DisableAction
+        # )
 
         # Subscribers
         self._odom_subscriber = rospy.Subscriber(
@@ -77,33 +79,25 @@ class TurnToHumanActionServer:
         self._current_joint_state = JointState()
         self._current_joy_priority = Bool()
 
-        # Start action servers
-        self._action_server.start()
+        # Ensure action servers ready
+        def wait_until_server_ready(server, server_name):
+            self._logger.log("Waiting for %s server..." % server_name)
+            server.wait_for_server()
+            self._logger.log("%s server ready." % server_name)
+
         self._logger.log("%s server ready." % self._action_name)
-
-        self._logger.log(
-            "Waiting for %s client..." % rospy.get_param("point_head_action")
+        wait_until_server_ready(
+            self._head_action_server, rospy.get_param("point_head_action")
         )
-        self._head_action_server.wait_for_server()
-        self._logger.log("%s client ready." % rospy.get_param("point_head_action"))
-
-        self._logger.log(
-            "Waiting for %s client..." % rospy.get_param("disable_autohead_action")
-        )
-        self._disable_action_server.wait_for_server()
-        self._logger.log(
-            "%s client ready." % rospy.get_param("disable_autohead_action")
-        )
+        # wait_until_server_ready(
+#             self._disable_action_server, rospy.get_param("disable_autohead_action")
+        # )
 
         use_joy_action = rospy.get_param("use_joy_action")
         self._logger.log("Use joy priority action: %s." % str(use_joy_action))
         if use_joy_action:
-            self._logger.log(
-                "Waiting for %s server..." % rospy.get_param("joy_priority_action")
-            )
-            self._joy_action_server.wait_for_server()
-            self._logger.log(
-                "%s client ready." % rospy.get_param("joy_priority_action")
+            wait_until_server_ready(
+                self._joy_action_server, rospy.get_param("joy_priority_action")
             )
 
         self._initialized = True
@@ -117,8 +111,8 @@ class TurnToHumanActionServer:
             return
 
         success = True
-        goal = DisableGoal()
-        self._disable_action_server.send_goal(goal)
+        # goal = DisableGoal()
+        # self._disable_action_server.send_goal(goal)
 
         required_angle = self.find_required_angle()
         self._logger.log(
@@ -178,12 +172,56 @@ class TurnToHumanActionServer:
         goal = JoyPriorityGoal()
         self._joy_action_server.send_goal(goal)
 
+    def get_tf(self, point, origin, inverse=False):
+        try:
+            self._tf_listener.waitForTransform(
+                point, origin, rospy.Time(0), rospy.Duration(5.0)
+            )
+            (translation, rotation) = self._tf_listener.lookupTransform(
+                point, origin, rospy.Time(0)
+            )
+            if inverse:
+                transform_matrix = tf.transformations.compose_matrix(
+                    translate=translation,
+                    angles=tf.transformations.euler_from_quaternion(rotation),
+                )
+                inverse_transform_matrix = tf.transformations.inverse_matrix(
+                    transform_matrix
+                )
+                translation, rotation = tf.transformations.translation_from_matrix(
+                    inverse_transform_matrix
+                ), tf.transformations.quaternion_from_matrix(inverse_transform_matrix)
+
+            # Convert to msg form
+            transform = Transform()
+            (
+                transform.translation.x,
+                transform.translation.y,
+                transform.translation.z,
+            ) = translation
+            (
+                transform.rotation.x,
+                transform.rotation.y,
+                transform.rotation.z,
+                transform.rotation.w,
+            ) = rotation
+
+            return transform
+        except (
+            tf.LookupException,
+            tf.ConnectivityException,
+            tf.ExtrapolationException,
+        ):
+            self._logger.log("Failed to lookup transform.", LogLevel.ERROR)
+            return None
+
     def find_required_angle(self):
-        tf = self._tf_listener.lookupTransform(
-            rospy.get_param("human_tf"), rospy.get_param("base_link"), rospy.Time(0)
-        )
-        tfi = tf.inverse()
-        return math.atan2(tfi.getOrigin().y(), tfi.getOrigin().x())
+        transform = self.get_tf(rospy.get_param("human_tf"), rospy.get_param("base_link"))
+        if not transform:
+            self._logger.log('Transform unavailable, aborting.')
+            exit()
+
+        return math.atan2(transform.translation.y, transform.translation.x)
 
     def move_torso(self):
         success = True
@@ -212,7 +250,7 @@ class TurnToHumanActionServer:
             self.publish_torso_velocity_command(
                 velocity if angle_change > 0.0 else -velocity
             )
-            self.publish_feedback("moving")
+            self.publish_feedback(String("moving"))
             r.sleep()
 
         self.publish_torso_velocity_command(0.0)
@@ -225,8 +263,10 @@ class TurnToHumanActionServer:
         return success
 
     def get_pose(self, point, origin):
-        transformation = self._tf_listener.lookupTransform(point, origin, rospy.Time(0))
-        inversed_transformation = transformation.inverse()
+        inversed_transformation = self.get_tf(point, origin, inverse=True)
+        if not inversed_transformation:
+            self._logger.log('Transform unavailable, aborting.')
+            exit()
 
         pose = Pose()
         pose.position.x = inversed_transformation.getOrigin().x()

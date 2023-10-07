@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <param name="turn_to_human_action_name" type="string" value="/turn_to_human" />
+    <param name="action_name" type="string" value="/turn_to_human" />
 
     <node pkg="dialogflow_emergency_action_servers" name="turn_to_human_action_client" type="turn_to_human_action_client.py" output="screen" />
 </launch>
