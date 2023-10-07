@@ -1,0 +1,8 @@
+# Goal (unused)
+std_msgs/String frame_id
+---
+# Result
+std_msgs/String status
+---
+# Feedback
+std_msgs/String status

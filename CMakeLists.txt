@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_action_files(
   DIRECTORY action
-  FILES TurnToHuman.action
+  FILES TurnToHuman.action MoveToHuman.action
 )
 
 generate_messages(
