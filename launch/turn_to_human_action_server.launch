@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+    <!-- Arguments -->
     <arg name="human_tf" value="human" />
-
+    <!-- Actions -->
+    <param name="action_name" type="string" value="/turn_to_human" />
+    <param name="joy_priority_action" type="string" value="/joy_priority_action" />
+    <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
+    <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
+    <!-- Frames -->
+    <param name="human_tf" type="string" value="$(arg human_tf)" />
+    <param name="robot_torso_tf" type="string" value="torso_lift_link" />
+    <param name="robot_head_tf" type="string" value="head_2_link" />
+    <param name="base_link_tf" type="string" value="base_link" />
+    <!-- Topics -->
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
     <param name="joint_state_topic" type="string" value="/joint_states" />
     <param name="joy_priority_topic" type="string" value="/joy_priority" />
     <param name="command_velocity_topic" type="string" value="/joy_vel" />
-    <param name="joy_priority_action" type="string" value="/joy_priority_action" />
-    <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
-    <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
-    <param name="action_name" type="string" value="/turn_to_human" />
+    <!-- Constants -->
     <param name="use_joy_action" type="bool" value="true" />
-    <param name="human_tf" type="string" value="$(arg human_tf)" />
-    <param name="torso_turning_velocity" type="double" value="0.6" />
-    <param name="head_turning_velocity" type="double" value="0.8" />
-    <param name="base_link" type="string" value="base_link" />
+    <param name="torso_rotation_velocity" type="double" value="0.6" />
+    <param name="head_rotation_velocity" type="double" value="0.8" />
     <param name="max_head_rotation" type="double" value="1.3" />
-
+    <!-- Nodes -->
     <node pkg="dialogflow_emergency_action_servers" name="turn_to_human_action_server" type="turn_to_human_action_server.py" output="screen" />
 </launch>

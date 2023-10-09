@@ -40,14 +40,14 @@ class TurnToHumanActionClient:
 
     def feedback_callback(self, feedback_msg):
         orientation = feedback_msg.orientation
-        orientation_str = "Result orientation: {x\: %f, y\: %f, z: %f, w: %f}" % (
+        orientation_str = "Result orientation: {x: %f, y: %f, z: %f, w: %f}" % (
             orientation.x,
             orientation.y,
             orientation.z,
             orientation.w,
         )
         self._logger.log(
-            "Server feedback: {status\: %s, orientation\: %s}"
+            "Server feedback: {status: %s, orientation: %s}"
             % (feedback_msg.status, orientation_str)
         )
 
