@@ -12,6 +12,7 @@
     <param name="robot_torso_tf" type="string" value="torso_lift_link" />
     <param name="robot_head_tf" type="string" value="head_2_link" />
     <param name="base_link_tf" type="string" value="base_link" />
+    <param name="point_head_tf" type="string" value="/head_controller/point_head_action/tilt_link" />
     <!-- Topics -->
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
     <param name="joint_state_topic" type="string" value="/joint_states" />

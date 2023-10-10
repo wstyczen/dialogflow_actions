@@ -109,7 +109,9 @@ class TurnToHumanActionServer:
 
     def abort(self, msg):
         self._logger.log(msg, LogLevel.ERROR)
-        self._action_server.set_aborted(result=TurnToHumanResult(status=String('aborted')))
+        self._action_server.set_aborted(
+            result=TurnToHumanResult(status=String("aborted"))
+        )
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
@@ -267,9 +269,7 @@ class TurnToHumanActionServer:
             goal.target.point.y = 0.0
             goal.target.point.z = 1.0
         elif movement == HeadMovement.FACE_HUMAN:
-            pose = self.get_pose(
-                rospy.get_param("human_tf"), RobotLink.BASE.value
-            )
+            pose = self.get_pose(rospy.get_param("human_tf"), RobotLink.BASE.value)
             goal.target.point.x = pose.position.x
             goal.target.point.y = pose.position.y
             goal.target.point.z = pose.position.z
@@ -279,9 +279,7 @@ class TurnToHumanActionServer:
         goal.pointing_axis.x = 1.0
         goal.pointing_axis.y = 0.0
         goal.pointing_axis.z = 0.0
-        goal.pointing_frame = rospy.get_param(
-            "/head_controller/point_head_action/tilt_link"
-        )
+        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
         goal.max_velocity = rospy.get_param("head_rotation_velocity")
         self._head_action_server.send_goal(goal)
         self._head_action_server.wait_for_result(rospy.Duration(1.0))

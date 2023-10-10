@@ -16,7 +16,7 @@ from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from nav_msgs.srv import GetPlan
 from std_msgs.msg import String
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Transform
 from logger import ActionServerLogger, Action, LogLevel
 
 
@@ -85,23 +85,39 @@ class MoveToHumanActionServer:
         goal.pointing_axis.x = 1.0
         goal.pointing_axis.y = 0.0
         goal.pointing_axis.z = 0.0
-        goal.pointing_frame = rospy.get_param(
-            "/head_controller/point_head_action/tilt_link"
-        )
-        goal.max_velocity = rospy.get_param("head_turning_velocity")
+        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
+        goal.max_velocity = rospy.get_param("head_rotation_velocity")
         self._head_client.send_goal(goal)
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
 
-    def get_pose(self, point, origin):
+    def get_tf(self, target_frame, source_frame, inverse=True):
+        if inverse:
+            target_frame, source_frame = source_frame, target_frame
+
         try:
             self._tf_listener.waitForTransform(
-                point, origin, rospy.Time(0), rospy.Duration(5.0)
+                target_frame, source_frame, rospy.Time(0), rospy.Duration(5.0)
             )
-            (origin, rotation) = self._tf_listener.lookupTransform(
-                point, origin, rospy.Time(0)
+            (translation, rotation) = self._tf_listener.lookupTransform(
+                target_frame, source_frame, rospy.Time(0)
             )
+
+            # Convert to Transform message form
+            transform = Transform()
+            (
+                transform.translation.x,
+                transform.translation.y,
+                transform.translation.z,
+            ) = translation
+            (
+                transform.rotation.x,
+                transform.rotation.y,
+                transform.rotation.z,
+                transform.rotation.w,
+            ) = rotation
+            return transform
         except (
             tf.LookupException,
             tf.ConnectivityException,
@@ -110,14 +126,17 @@ class MoveToHumanActionServer:
             self._logger.log("Failed to lookup transform.", LogLevel.ERROR)
             return None
 
+    def get_pose(self, point, origin):
+        transform = self.get_tf(point, origin)
+
         pose = Pose()
-        pose.position.x = origin[0]
-        pose.position.y = origin[1]
-        pose.position.z = origin[2]
-        pose.orientation.x = rotation[0]
-        pose.orientation.y = rotation[1]
-        pose.orientation.z = rotation[2]
-        pose.orientation.w = rotation[3]
+        pose.position.x = transform.translation.x
+        pose.position.y = transform.translation.y
+        pose.position.z = transform.translation.z
+        pose.orientation.x = transform.rotation.x
+        pose.orientation.y = transform.rotation.y
+        pose.orientation.z = transform.rotation.z
+        pose.orientation.w = transform.rotation.w
 
         return pose
 
@@ -131,6 +150,33 @@ class MoveToHumanActionServer:
         if not start_pose:
             self._logger.log("Can't determine goal pose, aborting.", LogLevel.ERROR)
             return
+
+        self._logger.log(
+            "Start pose: {x: %f. y: %f, z: %f}"
+            % (start_pose.position.x, start_pose.position.y, start_pose.position.z)
+        )
+        self._logger.log(
+            "Start orientation: {x: %f. y: %f, z: %f, w: %f}"
+            % (
+                start_pose.orientation.x,
+                start_pose.orientation.y,
+                start_pose.orientation.z,
+                start_pose.orientation.z,
+            )
+        )
+        self._logger.log(
+            "End pose: {x: %f. y: %f, z: %f}"
+            % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
+        )
+        self._logger.log(
+            "End orientation: {x: %f. y: %f, z: %f, w: %f}"
+            % (
+                goal_pose.orientation.x,
+                goal_pose.orientation.y,
+                goal_pose.orientation.z,
+                goal_pose.orientation.z,
+            )
+        )
 
         request = GetPlanRequest()
         request.start.header.frame_id = "map"
@@ -183,10 +229,8 @@ class MoveToHumanActionServer:
         goal.pointing_axis.x = 1.0
         goal.pointing_axis.y = 0.0
         goal.pointing_axis.z = 0.0
-        goal.pointing_frame = rospy.get_param(
-            "/head_controller/point_head_action/tilt_link"
-        )
-        goal.max_velocity = rospy.get_param("head_turning_velocity")
+        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
+        goal.max_velocity = rospy.get_param("head_rotation_velocity")
         self._head_client.send_goal(goal)
 
         while not rospy.is_shutdown():
