@@ -2,7 +2,6 @@
 
 import rospy
 import actionlib
-import tf
 import math
 
 # Msgs
@@ -16,8 +15,10 @@ from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from nav_msgs.srv import GetPlan
 from std_msgs.msg import String
-from geometry_msgs.msg import Pose, Transform
+
+# Local scripts
 from logger import ActionServerLogger, Action, LogLevel
+from tf_provider import TFProvider
 
 
 class MoveToHumanActionServer:
@@ -41,7 +42,9 @@ class MoveToHumanActionServer:
         self._odom_subscriber = rospy.Subscriber(
             "odom", Odometry, self.robot_odometry_callback
         )
-        self._tf_listener = tf.TransformListener()
+
+        # Transform provider
+        self._tf_provider = TFProvider()
 
         # Current state variables
         self._current_odom = Odometry()
@@ -92,53 +95,9 @@ class MoveToHumanActionServer:
     def robot_odometry_callback(self, message):
         self._current_odom = message
 
-    def get_tf(self, target_frame, source_frame, inverse=True):
-        if inverse:
-            target_frame, source_frame = source_frame, target_frame
-
-        try:
-            self._tf_listener.waitForTransform(
-                target_frame, source_frame, rospy.Time(0), rospy.Duration(5.0)
-            )
-            (translation, rotation) = self._tf_listener.lookupTransform(
-                target_frame, source_frame, rospy.Time(0)
-            )
-
-            # Convert to Transform message form
-            transform = Transform()
-            (
-                transform.translation.x,
-                transform.translation.y,
-                transform.translation.z,
-            ) = translation
-            (
-                transform.rotation.x,
-                transform.rotation.y,
-                transform.rotation.z,
-                transform.rotation.w,
-            ) = rotation
-            return transform
-        except (
-            tf.LookupException,
-            tf.ConnectivityException,
-            tf.ExtrapolationException,
-        ):
-            self._logger.log("Failed to lookup transform.", LogLevel.ERROR)
-            return None
-
     def get_pose(self, point, origin):
-        transform = self.get_tf(point, origin)
-
-        pose = Pose()
-        pose.position.x = transform.translation.x
-        pose.position.y = transform.translation.y
-        pose.position.z = transform.translation.z
-        pose.orientation.x = transform.rotation.x
-        pose.orientation.y = transform.rotation.y
-        pose.orientation.z = transform.rotation.z
-        pose.orientation.w = transform.rotation.w
-
-        return pose
+        transform = self._tf_provider.get_tf(point, origin)
+        return TFProvider.get_as_pose(transform)
 
     def get_plan(self):
         self._logger.log("Requesting plan.")
@@ -150,33 +109,6 @@ class MoveToHumanActionServer:
         if not start_pose:
             self._logger.log("Can't determine goal pose, aborting.", LogLevel.ERROR)
             return
-
-        self._logger.log(
-            "Start pose: {x: %f. y: %f, z: %f}"
-            % (start_pose.position.x, start_pose.position.y, start_pose.position.z)
-        )
-        self._logger.log(
-            "Start orientation: {x: %f. y: %f, z: %f, w: %f}"
-            % (
-                start_pose.orientation.x,
-                start_pose.orientation.y,
-                start_pose.orientation.z,
-                start_pose.orientation.z,
-            )
-        )
-        self._logger.log(
-            "End pose: {x: %f. y: %f, z: %f}"
-            % (goal_pose.position.x, goal_pose.position.y, goal_pose.position.z)
-        )
-        self._logger.log(
-            "End orientation: {x: %f. y: %f, z: %f, w: %f}"
-            % (
-                goal_pose.orientation.x,
-                goal_pose.orientation.y,
-                goal_pose.orientation.z,
-                goal_pose.orientation.z,
-            )
-        )
 
         request = GetPlanRequest()
         request.start.header.frame_id = "map"

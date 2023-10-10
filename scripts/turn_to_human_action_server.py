@@ -4,8 +4,6 @@ import math
 from enum import Enum
 
 from actionlib import SimpleActionClient, SimpleActionServer
-import tf
-from tf import TransformListener
 
 # Msgs
 from dialogflow_emergency_action_servers.msg import (
@@ -13,7 +11,7 @@ from dialogflow_emergency_action_servers.msg import (
     TurnToHumanFeedback,
     TurnToHumanResult,
 )
-from geometry_msgs.msg import Twist, Pose, Transform
+from geometry_msgs.msg import Twist, Point, Vector3
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool, String
 from control_msgs.msg import PointHeadAction, PointHeadGoal
@@ -21,7 +19,9 @@ from control_msgs.msg import PointHeadAction, PointHeadGoal
 # from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
+# Local scripts
 from logger import ActionServerLogger, Action, LogLevel
+from tf_provider import TFProvider
 
 # Relevant robot links' tf frames.
 class RobotLink(str, Enum):
@@ -72,12 +72,14 @@ class TurnToHumanActionServer:
         self._joy_priority_subscriber = rospy.Subscriber(
             rospy.get_param("joy_priority_topic"), Bool, self.joy_priority_callback
         )
-        self._tf_listener = TransformListener()
 
         # Publishers
         self._velocity_publisher = rospy.Publisher(
             rospy.get_param("command_velocity_topic"), Twist, queue_size=1000
         )
+
+        # Transform provider
+        self._tf_provider = TFProvider()
 
         # Current state variables
         self._current_odom = Odometry()
@@ -123,44 +125,10 @@ class TurnToHumanActionServer:
                 "Current joy priority: %s." % str(self._current_joy_priority.data)
             )
 
-    def get_tf(self, target_frame, source_frame, inverse=True):
-        if inverse:
-            target_frame, source_frame = source_frame, target_frame
-
-        try:
-            self._tf_listener.waitForTransform(
-                target_frame, source_frame, rospy.Time(0), rospy.Duration(5.0)
-            )
-            (translation, rotation) = self._tf_listener.lookupTransform(
-                target_frame, source_frame, rospy.Time(0)
-            )
-
-            # Convert to Transform message form
-            transform = Transform()
-            (
-                transform.translation.x,
-                transform.translation.y,
-                transform.translation.z,
-            ) = translation
-            (
-                transform.rotation.x,
-                transform.rotation.y,
-                transform.rotation.z,
-                transform.rotation.w,
-            ) = rotation
-            return transform
-        except (
-            tf.LookupException,
-            tf.ConnectivityException,
-            tf.ExtrapolationException,
-        ):
-            self._logger.log("Failed to lookup transform.", LogLevel.ERROR)
-            return None
-
     def get_angle_to_face_human(self):
         # Return the yaw (z axis rotation), which will make the robot torso face
         # the human.
-        human_position_in_robot_frame = self.get_tf(
+        human_position_in_robot_frame = self._tf_provider.get_tf(
             rospy.get_param("human_tf"), RobotLink.TORSO.value
         ).translation
         return math.atan2(
@@ -245,40 +213,28 @@ class TurnToHumanActionServer:
 
         return success
 
-    def get_pose(self, point, origin):
-        transformation = self.get_tf(point, origin)
-        if not transformation:
+    def get_relative_human_pose(self):
+        # Return the relative human pose in robot's frame
+        transform = self._tf_provider.get_tf(
+            rospy.get_param("human_tf"), RobotLink.BASE.value
+        )
+        if not transform:
             self.abort("Transform unavailable, aborting.")
 
-        pose = Pose()
-        pose.position.x = transformation.translation.x
-        pose.position.y = transformation.translation.y
-        pose.position.z = transformation.translation.z
-        pose.orientation.x = transformation.rotation
-        pose.orientation.y = transformation.rotation
-        pose.orientation.z = transformation.rotation
-        pose.orientation.w = transformation.rotation
-
-        return pose
+        return TFProvider.get_as_pose(transform)
 
     def point_head(self, movement):
         goal = PointHeadGoal()
         goal.target.header.frame_id = RobotLink.BASE
         if movement == HeadMovement.RESET:
-            goal.target.point.x = 1.0
-            goal.target.point.y = 0.0
-            goal.target.point.z = 1.0
+            goal.target = Point(1.0, 0.0, 1.0)
         elif movement == HeadMovement.FACE_HUMAN:
-            pose = self.get_pose(rospy.get_param("human_tf"), RobotLink.BASE.value)
-            goal.target.point.x = pose.position.x
-            goal.target.point.y = pose.position.y
-            goal.target.point.z = pose.position.z
+            human_pose = self.get_relative_human_pose()
+            goal.target.point = human_pose.position
         else:
             self.abort("Invalid head movement requested.")
 
-        goal.pointing_axis.x = 1.0
-        goal.pointing_axis.y = 0.0
-        goal.pointing_axis.z = 0.0
+        goal.pointing_axis = Vector3(1.0, 0.0, 0.0)
         goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
         goal.max_velocity = rospy.get_param("head_rotation_velocity")
         self._head_action_server.send_goal(goal)
