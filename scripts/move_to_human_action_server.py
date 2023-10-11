@@ -10,7 +10,6 @@ from dialogflow_emergency_action_servers.msg import (
     MoveToHumanActionResult,
 )
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from control_msgs.msg import PointHeadAction, PointHeadGoal
 from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from nav_msgs.srv import GetPlan
@@ -19,6 +18,7 @@ from std_msgs.msg import String
 # Local scripts
 from logger import ActionServerLogger, Action, LogLevel
 from tf_provider import TFProvider
+from head_controller import HeadController
 
 
 class MoveToHumanActionServer:
@@ -46,15 +46,15 @@ class MoveToHumanActionServer:
         # Transform provider
         self._tf_provider = TFProvider()
 
+        # Head controller
+        self._head_controller = HeadController()
+
         # Current state variables
         self._current_odom = Odometry()
 
         # Action servers
         self._move_base_client = actionlib.SimpleActionClient(
             rospy.get_param("move_base_action_name"), MoveBaseAction
-        )
-        self._head_client = actionlib.SimpleActionClient(
-            rospy.get_param("move_head_action_name"), PointHeadAction
         )
 
         # Init odom plan service
@@ -71,26 +71,9 @@ class MoveToHumanActionServer:
         wait_until_server_ready(
             self._move_base_client, rospy.get_param("move_base_action_name")
         )
-        wait_until_server_ready(
-            self._head_client, rospy.get_param("move_head_action_name")
-        )
 
         self._logger.log("%s server initialization complete." % self._action_name)
         self._initialized = True
-
-    def reset_head(self):
-        self._logger.log("Resetting head orientation.")
-        goal = PointHeadGoal()
-        goal.target.header.frame_id = rospy.get_param("base_link")
-        goal.target.point.x = 1.0
-        goal.target.point.y = 0.0
-        goal.target.point.z = 1.0
-        goal.pointing_axis.x = 1.0
-        goal.pointing_axis.y = 0.0
-        goal.pointing_axis.z = 0.0
-        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
-        goal.max_velocity = rospy.get_param("head_rotation_velocity")
-        self._head_client.send_goal(goal)
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
@@ -101,10 +84,12 @@ class MoveToHumanActionServer:
 
     def get_plan(self):
         self._logger.log("Requesting plan.")
+
         start_pose = self.get_pose("base_link", "map")
         if not start_pose:
             self._logger.log("Can't determine start pose, aborting.", LogLevel.ERROR)
             return
+
         goal_pose = self.get_pose(rospy.get_param("human_tf"), "map")
         if not start_pose:
             self._logger.log("Can't determine goal pose, aborting.", LogLevel.ERROR)
@@ -124,19 +109,18 @@ class MoveToHumanActionServer:
             plan.header.frame_id = "map"
 
             human_pose = goal_pose
-            final_poses_list = []
 
-            # Filter points in trajectory that are to close to human
-            min_distance = rospy.get_param("min_distance_to_human")
-            for pose in plan.poses:
-                distance = math.sqrt(
-                    (pose.pose.position.x - human_pose.position.x) ** 2
-                    + (pose.pose.position.y - human_pose.position.y) ** 2
-                )
-                if distance >= min_distance:
-                    final_poses_list.append(pose)
+            # Filter points in trajectory that are to close to the human.
+            get_distance_from_human = lambda robot_pose: math.sqrt(
+                (robot_pose.pose.position.x - human_pose.position.x) ** 2
+                + (robot_pose.pose.position.y - human_pose.position.y) ** 2
+            )
+            plan.poses = filter(
+                lambda pose: get_distance_from_human(pose)
+                >= rospy.get_param("min_distance_to_human"),
+                plan.poses,
+            )
 
-            plan.poses = final_poses_list
             self._logger.log("Returning plan.")
             return plan
         except rospy.ServiceException as e:
@@ -148,27 +132,13 @@ class MoveToHumanActionServer:
 
     def move_head(self):
         self._logger.log("Moving head.")
-        goal = PointHeadGoal()
         pose = self.get_pose(rospy.get_param("human_tf"), rospy.get_param("base_link"))
         if not pose:
             self._logger.log("Can't determine pose, aborting.", LogLevel.ERROR)
             return
 
-        goal.target.header.frame_id = rospy.get_param("base_link")
-        goal.target.point.x = pose.position.x
-        goal.target.point.y = pose.position.y
-        goal.target.point.z = pose.position.z
-        goal.pointing_axis.x = 1.0
-        goal.pointing_axis.y = 0.0
-        goal.pointing_axis.z = 0.0
-        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
-        goal.max_velocity = rospy.get_param("head_rotation_velocity")
-        self._head_client.send_goal(goal)
-
-        while not rospy.is_shutdown():
-            state = self._head_client.get_state()
-            if state == actionlib.GoalStatus.SUCCEEDED:
-                return
+        self._head_controller.point_at(pose.position)
+        self._head_controller.wait_till_idle()
 
     def execute_callback(self, goal):
         self._logger.log("New goal requested.")
@@ -177,7 +147,7 @@ class MoveToHumanActionServer:
             self._logger.log("Server not ready, ignoring request.", LogLevel.WARNING)
             return
 
-        self.reset_head()
+        self._head_controller.reset()
         plan = self.get_plan()
 
         if len(plan.poses) > 0:

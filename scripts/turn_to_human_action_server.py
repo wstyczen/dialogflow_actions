@@ -11,29 +11,22 @@ from dialogflow_emergency_action_servers.msg import (
     TurnToHumanFeedback,
     TurnToHumanResult,
 )
-from geometry_msgs.msg import Twist, Point, Vector3
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool, String
-from control_msgs.msg import PointHeadAction, PointHeadGoal
-
-# from pal_common_msgs.msg import DisableAction, DisableGoal
+from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
 # Local scripts
 from logger import ActionServerLogger, Action, LogLevel
 from tf_provider import TFProvider
+from head_controller import HeadController
 
 # Relevant robot links' tf frames.
 class RobotLink(str, Enum):
-    BASE = rospy.get_param("base_link_tf")
+    BASE = rospy.get_param("robot_base_tf")
     HEAD = rospy.get_param("robot_head_tf")
     TORSO = rospy.get_param("robot_torso_tf")
-
-
-# Head movement options.
-class HeadMovement(Enum):
-    RESET = 0
-    FACE_HUMAN = 1
 
 
 class TurnToHumanActionServer:
@@ -58,9 +51,6 @@ class TurnToHumanActionServer:
         self._joy_action_server = SimpleActionClient(
             rospy.get_param("joy_priority_action"), JoyPriorityAction
         )
-        self._head_action_server = SimpleActionClient(
-            rospy.get_param("point_head_action"), PointHeadAction
-        )
         # self._disable_action_server = SimpleActionClient(
         #     rospy.get_param("disable_autohead_action"), DisableAction
         # )
@@ -81,6 +71,9 @@ class TurnToHumanActionServer:
         # Transform provider
         self._tf_provider = TFProvider()
 
+        # Head controller
+        self._head_controller = HeadController()
+
         # Current state variables
         self._current_odom = Odometry()
         self._current_joy_priority = Bool()
@@ -92,9 +85,7 @@ class TurnToHumanActionServer:
             self._logger.log("%s server ready." % server_name)
 
         self._logger.log("%s server ready." % self._action_name)
-        wait_until_server_ready(
-            self._head_action_server, rospy.get_param("point_head_action")
-        )
+
         # wait_until_server_ready(
         #             self._disable_action_server, rospy.get_param("disable_autohead_action")
         # )
@@ -183,7 +174,6 @@ class TurnToHumanActionServer:
             if self._action_server.is_preempt_requested() or rospy.is_shutdown():
                 self._logger.log("%s: preempted." % self._action_name)
                 self._action_server.set_preempted()
-                self._head_action_server.stop_tracking_goal()
                 stop()
                 success = False
                 break
@@ -206,7 +196,7 @@ class TurnToHumanActionServer:
 
             r.sleep()
 
-        self.point_head(HeadMovement.RESET)
+        self._head_controller.reset()
 
         if not locked_state:
             self.call_joy_priority_action()
@@ -223,24 +213,8 @@ class TurnToHumanActionServer:
 
         return TFProvider.get_as_pose(transform)
 
-    def point_head(self, movement):
-        goal = PointHeadGoal()
-        goal.target.header.frame_id = RobotLink.BASE
-        if movement == HeadMovement.RESET:
-            goal.target = Point(1.0, 0.0, 1.0)
-        elif movement == HeadMovement.FACE_HUMAN:
-            human_pose = self.get_relative_human_pose()
-            goal.target.point = human_pose.position
-        else:
-            self.abort("Invalid head movement requested.")
-
-        goal.pointing_axis = Vector3(1.0, 0.0, 0.0)
-        goal.pointing_frame = rospy.get_param(rospy.get_param("point_head_tf"))
-        goal.max_velocity = rospy.get_param("head_rotation_velocity")
-        self._head_action_server.send_goal(goal)
-        self._head_action_server.wait_for_result(rospy.Duration(1.0))
-
-        return True
+    def point_head_at_human(self):
+        self._head_controller.point_at(self.get_relative_human_pose().position)
 
     def execute_callback(self, goal):
         self._logger.log("New goal requested.")
@@ -265,7 +239,7 @@ class TurnToHumanActionServer:
             success = self.rotate_torso()
         else:
             self._logger.log("Moving head.")
-            success = self.point_head(HeadMovement.FACE_HUMAN)
+            self.point_head_at_human()
 
         if success:
             self.publish_status("finished")
