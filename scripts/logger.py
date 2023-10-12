@@ -46,7 +46,7 @@ class Logger(object):
         return "%s/%s" % (self.get_logs_directory(), self.get_file_name())
 
     def output_to_screen(self, contents, level):
-        msg = "[%s]: %s" % (self._module_name, contents)
+        msg = "[%s] %s" % (self._module_name, contents)
         if level == LogLevel.INFO:
             rospy.loginfo(msg)
         elif level == LogLevel.WARNING:

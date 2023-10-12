@@ -19,6 +19,7 @@ from std_msgs.msg import String
 from logger import ActionServerLogger, Action, LogLevel
 from tf_provider import TFProvider
 from head_controller import HeadController
+from utils import wait_until_server_ready
 
 
 class MoveToHumanActionServer:
@@ -62,14 +63,10 @@ class MoveToHumanActionServer:
             rospy.get_param("move_base_plan_service_name"), GetPlan
         )
 
-        # Ensure action servers ready
-        def wait_until_server_ready(server, server_name):
-            self._logger.log("Waiting for %s server..." % server_name)
-            server.wait_for_server()
-            self._logger.log("%s server ready." % server_name)
-
         wait_until_server_ready(
-            self._move_base_client, rospy.get_param("move_base_action_name")
+            self._move_base_client,
+            rospy.get_param("move_base_action_name"),
+            self._logger,
         )
 
         self._logger.log("%s server initialization complete." % self._action_name)
@@ -85,7 +82,7 @@ class MoveToHumanActionServer:
     def get_plan(self):
         self._logger.log("Requesting plan.")
 
-        start_pose = self.get_pose("base_link", "map")
+        start_pose = self.get_pose(rospy.get_param("robot_base_tf"), "map")
         if not start_pose:
             self._logger.log("Can't determine start pose, aborting.", LogLevel.ERROR)
             return
@@ -132,7 +129,9 @@ class MoveToHumanActionServer:
 
     def move_head(self):
         self._logger.log("Moving head.")
-        pose = self.get_pose(rospy.get_param("human_tf"), rospy.get_param("base_link"))
+        pose = self.get_pose(
+            rospy.get_param("human_tf"), rospy.get_param("robot_base_tf")
+        )
         if not pose:
             self._logger.log("Can't determine pose, aborting.", LogLevel.ERROR)
             return
@@ -148,18 +147,18 @@ class MoveToHumanActionServer:
             return
 
         self._head_controller.reset()
-        plan = self.get_plan()
 
-        if len(plan.poses) > 0:
+        plan = self.get_plan()
+        if plan and len(plan.poses) > 0:
+            self._logger.log("Moving robot...")
             goal_pose = plan.poses[-1]
             navigation_goal = MoveBaseGoal()
             navigation_goal.target_pose = goal_pose
             self._move_base_client.send_goal(navigation_goal)
             self._move_base_client.wait_for_result()
             self.move_head()
-            self._logger.log("Moving robot...")
         else:
-            self._logger.log("Received empty movement plan.")
+            self._logger.log("Failed to plan movement.")
 
         result = MoveToHumanActionResult()
         result.status = String()

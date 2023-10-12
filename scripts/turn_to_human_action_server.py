@@ -14,13 +14,13 @@ from dialogflow_emergency_action_servers.msg import (
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool, String
-from pal_common_msgs.msg import DisableAction, DisableGoal
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
 # Local scripts
 from logger import ActionServerLogger, Action, LogLevel
 from tf_provider import TFProvider
 from head_controller import HeadController
+from utils import wait_until_server_ready
 
 # Relevant robot links' tf frames.
 class RobotLink(str, Enum):
@@ -51,9 +51,6 @@ class TurnToHumanActionServer:
         self._joy_action_server = SimpleActionClient(
             rospy.get_param("joy_priority_action"), JoyPriorityAction
         )
-        # self._disable_action_server = SimpleActionClient(
-        #     rospy.get_param("disable_autohead_action"), DisableAction
-        # )
 
         # Subscribers
         self._odom_subscriber = rospy.Subscriber(
@@ -79,32 +76,21 @@ class TurnToHumanActionServer:
         self._current_joy_priority = Bool()
 
         # Ensure action servers ready
-        def wait_until_server_ready(server, server_name):
-            self._logger.log("Waiting for %s server..." % server_name)
-            server.wait_for_server()
-            self._logger.log("%s server ready." % server_name)
-
-        self._logger.log("%s server ready." % self._action_name)
-
-        # wait_until_server_ready(
-        #             self._disable_action_server, rospy.get_param("disable_autohead_action")
-        # )
-
         use_joy_action = rospy.get_param("use_joy_action")
         self._logger.log("Use joy priority action: %s." % str(use_joy_action))
         if use_joy_action:
             wait_until_server_ready(
-                self._joy_action_server, rospy.get_param("joy_priority_action")
+                self._joy_action_server,
+                rospy.get_param("joy_priority_action"),
+                self._logger,
             )
 
         self._initialized = True
         self._logger.log("%s server initialization complete." % self._action_name)
 
     def abort(self, msg):
+        self._action_server.set_aborted()
         self._logger.log(msg, LogLevel.ERROR)
-        self._action_server.set_aborted(
-            result=TurnToHumanResult(status=String("aborted"))
-        )
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
@@ -210,6 +196,7 @@ class TurnToHumanActionServer:
         )
         if not transform:
             self.abort("Transform unavailable, aborting.")
+            return
 
         return TFProvider.get_as_pose(transform)
 
@@ -218,13 +205,11 @@ class TurnToHumanActionServer:
 
     def execute_callback(self, goal):
         self._logger.log("New goal requested.")
+        success = True
 
         if not self._initialized:
             self.abort("Server not ready, ignoring request.")
-
-        success = True
-        # goal = DisableGoal()
-        # self._disable_action_server.send_goal(goal)
+            return
 
         required_angle = self.get_angle_to_face_human()
         self._logger.log(
@@ -246,6 +231,7 @@ class TurnToHumanActionServer:
             self._logger.log("%s: succeeded." % self._action_name)
         else:
             self.abort("%s: aborted." % self._action_name)
+            return
 
         self._logger.log("Finished execution.")
 
