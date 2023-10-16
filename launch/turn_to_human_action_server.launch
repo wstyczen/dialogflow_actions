@@ -3,7 +3,7 @@
     <!-- Arguments -->
     <arg name="human_tf" value="human" />
     <!-- Actions -->
-    <param name="action_name" type="string" value="/turn_to_human" />
+    <param name="turn_to_human_action_name" type="string" value="/turn_to_human" />
     <param name="joy_priority_action" type="string" value="/joy_priority_action" />
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
     <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />

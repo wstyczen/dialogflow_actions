@@ -28,7 +28,7 @@ class MoveToHumanActionServer:
         self._initialized = False
 
         self._logger = ActionServerLogger(Action.MOVE_TO_HUMAN)
-        self._action_name = rospy.get_param("action_name")
+        self._action_name = rospy.get_param("move_to_human_action_name")
 
         # Init the action server
         self._logger.log("Initializing %s server." % self._action_name)

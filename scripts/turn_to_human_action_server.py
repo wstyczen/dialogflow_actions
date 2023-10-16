@@ -35,7 +35,7 @@ class TurnToHumanActionServer:
 
         # Create logger
         self._logger = ActionServerLogger(Action.TURN_TO_HUMAN)
-        self._action_name = rospy.get_param("action_name")
+        self._action_name = rospy.get_param("turn_to_human_action_name")
         self._logger.log("Initializing %s server." % self._action_name)
 
         # Init the action server
