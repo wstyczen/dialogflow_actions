@@ -18,7 +18,7 @@ class LogLevel(str, Enum):
 
 
 class Logger(object):
-    PACKAGE_NAME = "dialogflow_emergency_action_servers"
+    PACKAGE_NAME = "dialogflow_actions"
     PACKAGE_PATH = RosPack().get_path(PACKAGE_NAME)
     LOGS_DIRECTORY = "logs"
 

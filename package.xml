@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>dialogflow_emergency_action_servers</name>
+  <name>dialogflow_actions</name>
   <version>0.0.0</version>
-  <description>The dialogflow_emergency_action_servers package</description>
+  <description>The dialogflow_actions package</description>
   <maintainer email="wstyczen@gmail.com">wstyczen</maintainer>
   <license>TODO</license>
 

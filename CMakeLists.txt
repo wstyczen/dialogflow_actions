@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(dialogflow_emergency_action_servers)
+project(dialogflow_actions)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib

@@ -5,7 +5,7 @@ import actionlib
 import math
 
 # Msgs
-from dialogflow_emergency_action_servers.msg import (
+from dialogflow_actions.msg import (
     MoveToHumanAction,
     MoveToHumanFeedback,
     MoveToHumanResult,

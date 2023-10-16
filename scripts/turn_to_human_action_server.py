@@ -6,7 +6,7 @@ from enum import Enum
 from actionlib import SimpleActionClient, SimpleActionServer
 
 # Msgs
-from dialogflow_emergency_action_servers.msg import (
+from dialogflow_actions.msg import (
     TurnToHumanAction,
     TurnToHumanFeedback,
     TurnToHumanResult,
