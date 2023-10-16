@@ -184,8 +184,6 @@ class TurnToHumanActionServer:
 
             r.sleep()
 
-        self._head_controller.reset()
-
         if not locked_state:
             self.call_joy_priority_action()
 
@@ -220,16 +218,18 @@ class TurnToHumanActionServer:
         )
 
         # If possible, move just the head to face the speaker. If the angle is
-        # out of its range of motion move the torso.
+        # out of its range of motion start by moving the the torso.
         max_head_rotation = rospy.get_param("max_head_rotation")
-        used_link = "torso"
-        # if abs(required_angle) > max_head_rotation:
-        self._logger.log("Moving torso.")
-        success = self.rotate_torso()
-        # else:
-        # used_link = "head"
-        # self._logger.log("Moving head.")
-        # self.point_head_at_human()
+        used_link = None
+        if abs(required_angle) > max_head_rotation:
+            self._logger.log("Moving torso.")
+            used_link = "torso"
+            success = self.rotate_torso()
+        else:
+            used_link = "head"
+
+        self._logger.log("Moving head.")
+        self.point_head_at_human()
 
         if success:
             self.publish_result("success", used_link)
