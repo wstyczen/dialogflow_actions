@@ -112,15 +112,17 @@ class TurnToHumanActionServer:
             human_position_in_robot_frame.y, human_position_in_robot_frame.x
         )
 
-    def publish_feedback(self, state):
-        feedback_ = TurnToHumanFeedback()
-        feedback_.status = String(state)
-        feedback_.orientation = self._current_odom.pose.pose.orientation
-        self._action_server.publish_feedback(feedback_)
+    def publish_feedback(self, link):
+        feedback = TurnToHumanFeedback()
+        feedback.link = String(link)
+        feedback.robot_pose = self._current_odom.pose.pose
+        self._action_server.publish_feedback(feedback)
 
-    def publish_status(self, state):
+    def publish_result(self, status, used_link="none"):
         result = TurnToHumanResult()
-        result.status = String(state)
+        result.status = String(status)
+        result.robot_pose = self._current_odom.pose.pose
+        result.link = String(used_link)
         self._action_server.set_succeeded(result)
 
     def publish_torso_velocity_command(self, angular_velocity):
@@ -178,7 +180,7 @@ class TurnToHumanActionServer:
                 rotate_right()
             else:
                 rotate_left()
-            self.publish_feedback("rotating_torso")
+            self.publish_feedback("torso")
 
             r.sleep()
 
@@ -203,12 +205,13 @@ class TurnToHumanActionServer:
     def point_head_at_human(self):
         self._head_controller.point_at(self.get_relative_human_pose().position)
 
-    def execute_callback(self, goal):
-        self._logger.log("New goal requested.")
+    def execute_callback(self, _):
+        self._logger.log("New request received.")
         success = True
 
         if not self._initialized:
             self.abort("Server not ready, ignoring request.")
+            self.publish_result("failure")
             return
 
         required_angle = self.get_angle_to_face_human()
@@ -219,17 +222,20 @@ class TurnToHumanActionServer:
         # If possible, move just the head to face the speaker. If the angle is
         # out of its range of motion move the torso.
         max_head_rotation = rospy.get_param("max_head_rotation")
-        if abs(required_angle) > max_head_rotation:
-            self._logger.log("Moving torso.")
-            success = self.rotate_torso()
-        else:
-            self._logger.log("Moving head.")
-            self.point_head_at_human()
+        used_link = "torso"
+        # if abs(required_angle) > max_head_rotation:
+        self._logger.log("Moving torso.")
+        success = self.rotate_torso()
+        # else:
+        # used_link = "head"
+        # self._logger.log("Moving head.")
+        # self.point_head_at_human()
 
         if success:
-            self.publish_status("finished")
+            self.publish_result("success", used_link)
             self._logger.log("%s: succeeded." % self._action_name)
         else:
+            self.publish_result("failure", used_link)
             self.abort("%s: aborted." % self._action_name)
             return
 

@@ -1,8 +1,9 @@
-# Goal (unused)
-std_msgs/String frame_id
+# Goal
+std_msgs/String reason # reason why the server is called (unnecessary, but must action have a goal)
 ---
 # Result
-std_msgs/String status
+std_msgs/String status # ('success', 'failure', ..)
+geometry_msgs/Pose robot_pose # robot's end pose
 ---
 # Feedback
-std_msgs/String status
+geometry_msgs/Pose robot_pose # robot's current pose

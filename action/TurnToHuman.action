@@ -1,9 +1,11 @@
 # Goal - position for the robot to turn to
-geometry_msgs/PoseWithCovariance human_pose
+std_msgs/String reason # reason why the server is called (unnecessary, but must action have a goal)
 ---
-# Result - which link has turned (head/torso)
-std_msgs/String status
+# Result
+std_msgs/String status # ('success', 'failure', ..)
+std_msgs/String link # which link has been moved (head/torso)
+geometry_msgs/Pose robot_pose # robot's end pose
 ---
 # Feedback messages
-geometry_msgs/Quaternion orientation # current orientation of microphone
-std_msgs/String status # which link is currently rotating (head/torso)
+geometry_msgs/Pose robot_pose # robot's current pose
+std_msgs/String link # which link is used (head/torso)

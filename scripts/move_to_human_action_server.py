@@ -7,7 +7,8 @@ import math
 # Msgs
 from dialogflow_emergency_action_servers.msg import (
     MoveToHumanAction,
-    MoveToHumanActionResult,
+    MoveToHumanFeedback,
+    MoveToHumanResult,
 )
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
@@ -41,7 +42,7 @@ class MoveToHumanActionServer:
 
         # Subscribers
         self._odom_subscriber = rospy.Subscriber(
-            "odom", Odometry, self.robot_odometry_callback
+            rospy.get_param("odometry_topic"), Odometry, self.robot_odometry_callback
         )
 
         # Transform provider
@@ -74,6 +75,18 @@ class MoveToHumanActionServer:
 
     def robot_odometry_callback(self, message):
         self._current_odom = message
+
+    def publish_feedback(self):
+        feedback = MoveToHumanFeedback()
+        feedback.robot_pose = self._current_odom.pose.pose
+        self._action_server.publish_feedback(feedback)
+
+    def publish_result(self, status):
+        result = MoveToHumanResult()
+        result.status = String(status)
+        result.robot_pose = self._current_odom.pose.pose
+        self._action_server.set_succeeded(result)
+        self._logger.log("Action ended with status: '%s'" % status)
 
     def get_pose(self, point, origin):
         transform = self._tf_provider.get_tf(point, origin)
@@ -139,11 +152,12 @@ class MoveToHumanActionServer:
         self._head_controller.point_at(pose.position)
         self._head_controller.wait_till_idle()
 
-    def execute_callback(self, goal):
-        self._logger.log("New goal requested.")
+    def execute_callback(self, _):
+        self._logger.log("New request received.")
 
         if not self._initialized:
             self._logger.log("Server not ready, ignoring request.", LogLevel.WARNING)
+            self.publish_result("failure")
             return
 
         self._head_controller.reset()
@@ -155,17 +169,15 @@ class MoveToHumanActionServer:
             navigation_goal = MoveBaseGoal()
             navigation_goal.target_pose = goal_pose
             self._move_base_client.send_goal(navigation_goal)
-            self._move_base_client.wait_for_result()
+            while not self._move_base_client.wait_for_result(rospy.Duration(0.5)):
+                self.publish_feedback()
             self.move_head()
+            self.publish_result("success")
         else:
             self._logger.log("Failed to plan movement.")
+            self.publish_result("failure")
 
-        result = MoveToHumanActionResult()
-        result.status = String()
-        result.status.data = "finished"
-        self._action_server.set_succeeded(result)
-
-        self._logger.log("%s action completed." % self._action_name)
+        self._logger.log("%s execution finished." % self._action_name)
 
 
 def run_server():

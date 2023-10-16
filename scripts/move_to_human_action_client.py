@@ -8,6 +8,7 @@ from dialogflow_emergency_action_servers.msg import (
     MoveToHumanGoal,
 )
 from logger import ActionClientLogger, Action
+from utils import get_pose_string_representation
 
 
 class MoveToHumanActionClient:
@@ -39,15 +40,21 @@ class MoveToHumanActionClient:
 
     def feedback_callback(self, feedback_msg):
         self._logger.log(
-            "Server feedback: {status\: %s, orientation\: %s}" % feedback_msg
+            "Server feedback -- current pose: %s"
+            % get_pose_string_representation(feedback_msg.robot_pose),
         )
 
-    def get_result_callback(self, state, result_msg):
-        self._logger.log("Received result with state: %s" % state)
-        self._logger.log("Result:\n{%s}" % result_msg)
+    def get_result_callback(self, _, result_msg):
+        self._logger.log(
+            "Received end result:{status: %s, robot's pose: %s}"
+            % (
+                result_msg.status.data,
+                get_pose_string_representation(result_msg.robot_pose),
+            )
+        )
 
         rospy.signal_shutdown("Shutting down %s client." % self._action_name)
-        self._logger.log("Shutting down %s client" % self._action_name)
+        self._logger.log("Shutting down %s client." % self._action_name)
 
     def wait_for_result(self):
         self._logger.log("Waiting for result...")

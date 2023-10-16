@@ -6,9 +6,9 @@ import actionlib
 from dialogflow_emergency_action_servers.msg import (
     TurnToHumanAction,
     TurnToHumanGoal,
-    TurnToHumanResult,
 )
 from logger import ActionClientLogger, Action
+from utils import get_pose_string_representation
 
 
 class TurnToHumanActionClient:
@@ -39,25 +39,26 @@ class TurnToHumanActionClient:
         self._logger.log("Goal accepted.")
 
     def feedback_callback(self, feedback_msg):
-        orientation = feedback_msg.orientation
-        orientation_str = "Result orientation: {x: %f, y: %f, z: %f, w: %f}" % (
-            orientation.x,
-            orientation.y,
-            orientation.z,
-            orientation.w,
-        )
         self._logger.log(
-            "Server feedback: {status: %s, orientation: %s}"
-            % (feedback_msg.status, orientation_str)
+            "Server feedback: {moved link: %s, robot's pose: %s}"
+            % (
+                feedback_msg.link.data,
+                get_pose_string_representation(feedback_msg.robot_pose),
+            )
         )
 
-    def get_result_callback(self, state, result_msg):
-        self._logger.log("Received result with state: %s" % state)
-
-        self._logger.log("Result status: %s" % result_msg.status.data)
+    def get_result_callback(self, _, result_msg):
+        self._logger.log(
+            "Server returned result: {status: %s, link used: %s, robot's pose: %s}"
+            % (
+                result_msg.status.data,
+                result_msg.link,
+                get_pose_string_representation(result_msg.robot_pose),
+            )
+        )
 
         rospy.signal_shutdown("Shutting down %s client." % self._action_name)
-        self._logger.log("Shutting down %s client", self._action_name)
+        self._logger.log("Shutting down %s client.", self._action_name)
 
     def wait_for_result(self):
         self._logger.log("Waiting for result...")
