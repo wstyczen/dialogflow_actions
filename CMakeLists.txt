@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+catkin_python_setup()
+
 add_action_files(
   DIRECTORY action
   FILES TurnToHuman.action MoveToHuman.action

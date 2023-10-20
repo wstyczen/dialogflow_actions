@@ -17,10 +17,10 @@ from nav_msgs.srv import GetPlan
 from std_msgs.msg import String
 
 # Local scripts
-from logger import ActionServerLogger, Action, LogLevel
-from tf_provider import TFProvider
-from head_controller import HeadController
-from utils import wait_until_server_ready
+from utility.logger import ActionServerLogger, Action, LogLevel
+from utility.tf_provider import TFProvider
+from utility.head_controller import HeadController
+from utility.utils import wait_until_server_ready
 
 
 class MoveToHumanActionServer:
