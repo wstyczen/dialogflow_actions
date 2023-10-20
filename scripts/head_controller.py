@@ -12,7 +12,18 @@ from utils import wait_until_server_ready
 
 
 class HeadController:
+    """
+    A wrapper class to help with pointing the robot's head at specified points.
+
+    Attributes:
+        _logger (Logger): An instance of the Logger class.
+        _point_head_action_server (SimpleActionClient): An action client for the PointHeadAction action.
+    """
+
     def __init__(self):
+        """
+        Initialize the HeadController.
+        """
         self._logger = Logger("head controller")
 
         point_head_action_name = rospy.get_param("point_head_action")
@@ -25,6 +36,15 @@ class HeadController:
         self._logger.log("Head controller ready.")
 
     def point_at(self, point):
+        """
+        Point the robot's head at a specified point.
+
+        Args:
+            point (Point): The point which the head should look at.
+
+        Returns:
+            bool: Whether pointing action was successful.
+        """
         self._logger.log(
             "Pointing head at {x: %f, y: %f, z: %f}" % (point.x, point.y, point.z)
         )
@@ -42,10 +62,16 @@ class HeadController:
         return True
 
     def reset(self):
+        """
+        Resets the head to its default orientation.
+        """
         self._logger.log("Resetting head.")
         self.point_at(Point(1.0, 0.0, 1.0))
 
     def wait_till_idle(self):
+        """
+        Waits until the current movement is completed.
+        """
         while (
             not rospy.is_shutdown()
             and self._point_head_action_server.get_state()

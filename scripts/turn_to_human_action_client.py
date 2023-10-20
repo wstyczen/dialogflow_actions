@@ -16,7 +16,7 @@ from utils import get_pose_string_representation
 
 class TurnToHumanActionClient(ActionClientInterface):
     """
-    Client for the '\\turn_to_human' action.
+    Client for the 'TurnToHuman' action.
 
     This class implements the ActionClientInterface, providing all the
     necessary methods and attributes.

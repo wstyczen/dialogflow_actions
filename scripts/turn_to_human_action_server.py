@@ -30,7 +30,32 @@ class RobotLink(str, Enum):
 
 
 class TurnToHumanActionServer:
+    """
+    Server for the 'TurnToHuman' action.
+
+    This class handles requests to orient the robot towards the human.
+
+    If possible only the robot's head will move, pointing in the direction of
+    the human. If the movement exceeds its range of motion, the robot's torso
+    will be rotated first.
+
+    Attributes:
+        _initialized (bool): Flag to indicate if the server has been initialized.
+        _logger (ActionServerLogger): An instance of the ActionServerLogger.
+        _action_name (str): The name of the action server.
+        _action_server (actionlib.SimpleActionServer): The action server instance.
+        _current_odom (Odometry): The current odometry of the robot.
+        _odom_subscriber (rospy.Subscriber): Subscriber for robot's Odometry messages.
+        _joy_priority_subscriber (rospy.Subscriber): Subscriber for joy priority status.
+        _velocity_publisher (rospy.Publisher): Publisher for velocity commands.
+        _tf_provider (TFProvider): An instance of the TFProvider for providing transforms.
+        _head_controller (HeadController): An instance of the HeadController for controlling the robot's head movement.
+    """
+
     def __init__(self):
+        """
+        Initialize the TurnToHumanActionServer.
+        """
         self._initialized = False
 
         # Create logger
@@ -52,6 +77,10 @@ class TurnToHumanActionServer:
             rospy.get_param("joy_priority_action"), JoyPriorityAction
         )
 
+        # Current state variables
+        self._current_odom = Odometry()
+        self._current_joy_priority = Bool()
+
         # Subscribers
         self._odom_subscriber = rospy.Subscriber(
             rospy.get_param("odometry_topic"), Odometry, self.robot_odometry_callback
@@ -71,10 +100,6 @@ class TurnToHumanActionServer:
         # Head controller
         self._head_controller = HeadController()
 
-        # Current state variables
-        self._current_odom = Odometry()
-        self._current_joy_priority = Bool()
-
         # Ensure action servers ready
         use_joy_action = rospy.get_param("use_joy_action")
         self._logger.log("Use joy priority action: %s." % str(use_joy_action))
@@ -89,13 +114,31 @@ class TurnToHumanActionServer:
         self._logger.log("%s server initialization complete." % self._action_name)
 
     def abort(self, msg):
+        """
+        Abort the action and log an error message.
+
+        Args:
+            msg (str): Reason for aborting.
+        """
         self._action_server.set_aborted()
         self._logger.log(msg, LogLevel.ERROR)
 
     def robot_odometry_callback(self, message):
+        """
+        Callback for receiving robot's current odometry.
+
+        Args:
+            message (Odometry): Robot's odometry.
+        """
         self._current_odom = message
 
     def joy_priority_callback(self, message):
+        """
+        Callback for receiving joy priority status.
+
+        Args:
+            message (Bool): The received joy priority status.
+        """
         if rospy.get_param("use_joy_action"):
             self._current_joy_priority = message
             self._logger.log(
@@ -103,8 +146,13 @@ class TurnToHumanActionServer:
             )
 
     def get_angle_to_face_human(self):
-        # Return the yaw (z axis rotation), which will make the robot torso face
-        # the human.
+        """
+        Return the yaw (z axis rotation), which will make the robot's torso face
+        the human when rotated.
+
+        Returns:
+            float: The required angle in radians.
+        """
         human_position_in_robot_frame = self._tf_provider.get_tf(
             rospy.get_param("human_tf"), RobotLink.TORSO.value
         ).translation
@@ -113,12 +161,25 @@ class TurnToHumanActionServer:
         )
 
     def publish_feedback(self, link):
+        """
+        Publish feedback to the client.
+
+        Args:
+            link (str): Robot's link which is currently moved.
+        """
         feedback = TurnToHumanFeedback()
         feedback.link = String(link)
         feedback.robot_pose = self._current_odom.pose.pose
         self._action_server.publish_feedback(feedback)
 
     def publish_result(self, status, used_link="none"):
+        """
+        Publish the end result of the action.
+
+        Args:
+            status (str): The status of action completion ('success', 'failure', etc).
+            used_link (str, optional): The link used during the action ('none' by default).
+        """
         result = TurnToHumanResult()
         result.status = String(status)
         result.robot_pose = self._current_odom.pose.pose
@@ -126,15 +187,27 @@ class TurnToHumanActionServer:
         self._action_server.set_succeeded(result)
 
     def publish_torso_velocity_command(self, angular_velocity):
+        """
+        Publish torso velocity commands.
+
+        Args:
+            angular_velocity (float): The angular velocity for the z-axis (yaw) of the torso rotation.
+        """
         velocity = Twist()
         velocity.angular.z = angular_velocity
         self._velocity_publisher.publish(velocity)
 
     def call_joy_priority_action(self):
-        goal = JoyPriorityGoal()
-        self._joy_action_server.send_goal(goal)
+        """Call the JoyPriority action server."""
+        self._joy_action_server.send_goal(JoyPriorityGoal())
 
     def rotate_torso(self):
+        """
+        Rotate the robot's torso to face the human.
+
+        Returns:
+            bool: Whether the action completed successfully.
+        """
         EPS = 0.05  # Acceptable orientation error
         r = rospy.Rate(30)  # Loop sleep rate
         success = True
@@ -190,7 +263,12 @@ class TurnToHumanActionServer:
         return success
 
     def get_relative_human_pose(self):
-        # Return the relative human pose in robot's frame
+        """
+        Get the relative human pose in the robot's frame.
+
+        Returns:
+            Pose: Relative human pose.
+        """
         transform = self._tf_provider.get_tf(
             rospy.get_param("human_tf"), RobotLink.BASE.value
         )
@@ -201,9 +279,18 @@ class TurnToHumanActionServer:
         return TFProvider.get_as_pose(transform)
 
     def point_head_at_human(self):
+        """Point the robot's head towards the human."""
         self._head_controller.point_at(self.get_relative_human_pose().position)
 
     def execute_callback(self, _):
+        """
+        Callback for handling action requests.
+
+        If necessary rotates the robot's torso, but if possible only moves its head to look towards the human.
+
+        Args:
+            _: Action goal (unused).
+        """
         self._logger.log("New request received.")
         success = True
 
@@ -243,7 +330,7 @@ class TurnToHumanActionServer:
 
 
 def run_server():
-    # Initialize the node and create the server instance
+    # Initialize the node and create the server instance.
     rospy.init_node("turn_to_human_action_server")
     TurnToHumanActionServer()
     rospy.spin()
