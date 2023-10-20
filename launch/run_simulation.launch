@@ -3,5 +3,5 @@
   <!-- Post human position -->
   <include file="$(find dialogflow_actions)/launch/post_human_position.launch" />
   <!-- Room 012 sim -->
-  <include file="$(find tiago_sim_integration)/launch/tiago_navigation_public_012.launch" />
+  <include file="$(find tiago_sim_integration)/launch/tiago_navigation_public_012_new.launch" />
 </launch>

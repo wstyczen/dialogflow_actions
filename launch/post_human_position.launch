@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <arg name="human_tf" value="human" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="0.6 8.9 1.5 0 0 0 1 map $(arg human_tf)" />
-    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="3.5 6 1.5 0 0 0 1 map $(arg human_tf)" /> -->
-    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="0.9 0.9 1.5 0 0 0 1 map $(arg human_tf)" /> -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="0.6 8.9 1 0 0 0 1 map $(arg human_tf)" />
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="3.5 6 1 0 0 0 1 map $(arg human_tf)" /> -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="0.9 0.9 1 0 0 0 1 map $(arg human_tf)" /> -->
 </launch>

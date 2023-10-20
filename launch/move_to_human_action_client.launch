@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <param name="action_name" type="string" value="/move_to_human" />
+    <param name="move_to_human_action_name" type="string" value="/move_to_human" />
 
     <node pkg="dialogflow_actions" name="move_to_human_action_client" type="move_to_human_action_client.py" output="screen" />
 </launch>

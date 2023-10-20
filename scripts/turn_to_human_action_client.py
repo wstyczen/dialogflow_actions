@@ -7,13 +7,32 @@ from dialogflow_actions.msg import (
     TurnToHumanAction,
     TurnToHumanGoal,
 )
+
+# Local scripts
+from action_client_interface import ActionClientInterface
 from logger import ActionClientLogger, Action
 from utils import get_pose_string_representation
 
 
-class TurnToHumanActionClient:
+class TurnToHumanActionClient(ActionClientInterface):
+    """
+    Client for the '\\turn_to_human' action.
+
+    This class implements the ActionClientInterface, providing all the
+    necessary methods and attributes.
+
+    Attributes:
+        _action_name (str): The name of the 'TurnToHuman' action.
+        _logger (ActionClientLogger): An instance of the logger for this action client.
+        _action_client (actionlib.SimpleActionClient): An instance of the action client.
+    """
+
     def __init__(self):
-        self._action_name = rospy.get_param("action_name")
+        """
+        Initializes the TurnToHumanActionClient.
+        """
+
+        self._action_name = rospy.get_param("turn_to_human_action_name")
         self._logger = ActionClientLogger(Action.TURN_TO_HUMAN)
         self._logger.log("Initializing %s client." % self._action_name)
 
@@ -21,24 +40,13 @@ class TurnToHumanActionClient:
             self._action_name, TurnToHumanAction
         )
 
-    def send_goal(self, goal):
-        self._logger.log("Attempting to send a goal.")
-
-        self._action_client.wait_for_server()
-        self._logger.log("Connected to server.")
-
-        self._sent_goal_handle = self._action_client.send_goal(
-            goal,
-            active_cb=self.goal_response_callback,
-            feedback_cb=self.feedback_callback,
-            done_cb=self.get_result_callback,
-        )
-        self._logger.log("Goal sent to server.")
-
-    def goal_response_callback(self):
-        self._logger.log("Goal accepted.")
-
     def feedback_callback(self, feedback_msg):
+        """
+        Callback for handling feedback received server.
+
+        Args:
+            feedback_msg (TurnToHumanFeedback): Feedback message received from server.
+        """
         self._logger.log(
             "Server feedback: {moved link: %s, robot's pose: %s}"
             % (
@@ -48,6 +56,13 @@ class TurnToHumanActionClient:
         )
 
     def get_result_callback(self, _, result_msg):
+        """
+        Callback for handling the action result received server.
+
+        Args:
+            _: The result status (unused).
+            result_msg (TurnToHumanFeedback): Result received from server.
+        """
         self._logger.log(
             "Server returned result: {status: %s, link used: %s, robot's pose: %s}"
             % (
@@ -57,29 +72,14 @@ class TurnToHumanActionClient:
             )
         )
 
-        rospy.signal_shutdown("Shutting down %s client." % self._action_name)
-        self._logger.log("Shutting down %s client.", self._action_name)
-
-    def wait_for_result(self):
-        self._logger.log("Waiting for result...")
-        self._action_client.wait_for_result()
-
-
-def run_client():
-    rospy.init_node("turn_to_human_action_client")
-
-    rospy.loginfo("STARTING TEST CLIENT.")
-
-    client = TurnToHumanActionClient()
-
-    human_pose = TurnToHumanGoal()
-    client.send_goal(human_pose)
-
-    client.wait_for_result()
-    rospy.loginfo("TEST CLIENT FINISHED.")
-
-    rospy.spin()
+        self.shut_down()
 
 
 if __name__ == "__main__":
-    run_client()
+    rospy.init_node("turn_to_human_action_client")
+
+    client = TurnToHumanActionClient()
+    client.send_goal(TurnToHumanGoal())
+    client.wait_for_result()
+
+    rospy.spin()
