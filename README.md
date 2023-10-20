@@ -4,8 +4,8 @@
 
 > When called, orients the robots to face the human.
 >
-> If possible only the head will move, but if the goal is outside of its
-> range of motion, the robot will rotate its torso instead.
+> If possible only the head will move. If the goal is outside of its
+> range of motion, the robot will rotate its torso beforehand.
 
 ### Running the server
 

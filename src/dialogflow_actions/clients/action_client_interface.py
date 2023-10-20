@@ -27,8 +27,9 @@ class ActionClientInterface:
         """
         self._logger.log("Attempting to send a goal.")
 
+        self._logger.log("Connecting to %s server..." % self._action_name)
         self._action_client.wait_for_server()
-        self._logger.log("Connected to %s server." % self._action_name)
+        self._logger.log("Connected.")
 
         self._action_client.send_goal(
             goal,
