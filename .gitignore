@@ -1,3 +1,4 @@
 logs/*
 *pyc
 .vscode/
+sphinx_doc/_build/

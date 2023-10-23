@@ -46,3 +46,13 @@ roslaunch dialogflow_actions move_to_human_action_client.launch # Launch a simpl
 ```sh
 roslaunch dialogflow_actions action_servers.launch # Launch all action servers
 ```
+
+## Code **documentation**
+
+> Sphynx documentation.
+
+```sh
+# From pkg root
+sphinx-apidoc -o sphinx_doc src # generate .rst files for python modules
+make html # generate doc in html format
+```
