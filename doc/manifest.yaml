@@ -1,0 +1,28 @@
+actions:
+- MoveToHuman
+- TurnToHuman
+authors: ''
+brief: ''
+bugtracker: ''
+depends:
+- nav_msgs
+- rospack
+- std_msgs
+- actionlib
+- sensor_msgs
+- catkin
+- python-catkin-pkg
+- geometry_msgs
+- pal_common_msgs
+- tf
+- move_base_msgs
+- rospy
+- actionlib_msgs
+description: The dialogflow_actions package
+license: TODO
+maintainers: wstyczen <wstyczen@gmail.com>
+msgs: []
+package_type: package
+repo_url: ''
+srvs: []
+url: ''

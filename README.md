@@ -53,6 +53,6 @@ roslaunch dialogflow_actions action_servers.launch # Launch all action servers
 
 ```sh
 # From pkg root
-sphinx-apidoc -o sphinx_doc src # generate .rst files for python modules
-make html # generate doc in html format
+sphinx-apidoc -o doc src # generate .rst files for python modules
+make html # or 'rosdoc_lite .' -- generate html doc
 ```
