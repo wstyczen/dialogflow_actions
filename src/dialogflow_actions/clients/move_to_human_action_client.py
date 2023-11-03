@@ -77,5 +77,3 @@ if __name__ == "__main__":
     client = MoveToHumanActionClient()
     client.send_goal(MoveToHumanGoal())
     client.wait_for_result()
-
-    rospy.spin()

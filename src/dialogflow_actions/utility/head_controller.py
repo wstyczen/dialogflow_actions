@@ -63,14 +63,14 @@ class HeadController:
 
     def reset(self):
         """
-        Resets the head to its default orientation.
+        Reset the head to its default orientation.
         """
         self._logger.log("Resetting head.")
         self.point_at(Point(1.0, 0.0, 1.0))
 
     def wait_till_idle(self):
         """
-        Waits until the current movement is completed.
+        Wait until the current movement is completed.
         """
         while (
             not rospy.is_shutdown()
