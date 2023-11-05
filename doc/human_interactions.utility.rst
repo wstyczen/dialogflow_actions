@@ -1,37 +1,37 @@
-dialogflow\_actions.utility package
+human_interactions.utility package
 ===================================
 
 Submodules
 ----------
 
-dialogflow\_actions.utility.head\_controller module
+human_interactions.utility.head_controller module
 ---------------------------------------------------
 
-.. automodule:: dialogflow_actions.utility.head_controller
+.. automodule:: human_interactions.utility.head_controller
     :members:
     :undoc-members:
     :show-inheritance:
 
-dialogflow\_actions.utility.logger module
+human_interactions.utility.logger module
 -----------------------------------------
 
-.. automodule:: dialogflow_actions.utility.logger
+.. automodule:: human_interactions.utility.logger
     :members:
     :undoc-members:
     :show-inheritance:
 
-dialogflow\_actions.utility.tf\_provider module
+human_interactions.utility.tf_provider module
 -----------------------------------------------
 
-.. automodule:: dialogflow_actions.utility.tf_provider
+.. automodule:: human_interactions.utility.tf_provider
     :members:
     :undoc-members:
     :show-inheritance:
 
-dialogflow\_actions.utility.utils module
+human_interactions.utility.utils module
 ----------------------------------------
 
-.. automodule:: dialogflow_actions.utility.utils
+.. automodule:: human_interactions.utility.utils
     :members:
     :undoc-members:
     :show-inheritance:
@@ -40,7 +40,7 @@ dialogflow\_actions.utility.utils module
 Module contents
 ---------------
 
-.. automodule:: dialogflow_actions.utility
+.. automodule:: human_interactions.utility
     :members:
     :undoc-members:
     :show-inheritance:

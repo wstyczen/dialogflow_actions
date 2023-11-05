@@ -1,4 +1,4 @@
-dialogflow\_actions package
+human_interactions package
 ===========================
 
 Subpackages
@@ -6,14 +6,14 @@ Subpackages
 
 .. toctree::
 
-    dialogflow_actions.clients
-    dialogflow_actions.servers
-    dialogflow_actions.utility
+    human_interactions.clients
+    human_interactions.servers
+    human_interactions.utility
 
 Module contents
 ---------------
 
-.. automodule:: dialogflow_actions
+.. automodule:: human_interactions
     :members:
     :undoc-members:
     :show-inheritance:

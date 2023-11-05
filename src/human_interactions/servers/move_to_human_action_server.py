@@ -5,7 +5,7 @@ import actionlib
 import math
 
 # Msgs
-from dialogflow_actions.msg import (
+from human_interactions.msg import (
     MoveToHumanAction,
     MoveToHumanFeedback,
     MoveToHumanResult,
@@ -17,10 +17,10 @@ from nav_msgs.srv import GetPlan
 from std_msgs.msg import String
 
 # Local scripts
-from dialogflow_actions.utility.logger import ActionServerLogger, Action, LogLevel
-from dialogflow_actions.utility.tf_provider import TFProvider
-from dialogflow_actions.utility.head_controller import HeadController
-from dialogflow_actions.utility.utils import wait_until_server_ready
+from human_interactions.utility.logger import ActionServerLogger, Action, LogLevel
+from human_interactions.utility.tf_provider import TFProvider
+from human_interactions.utility.head_controller import HeadController
+from human_interactions.utility.utils import wait_until_server_ready
 
 
 class MoveToHumanActionServer:

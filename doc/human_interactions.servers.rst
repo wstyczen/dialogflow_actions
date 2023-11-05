@@ -1,21 +1,21 @@
-dialogflow\_actions.servers package
+human_interactions.servers package
 ===================================
 
 Submodules
 ----------
 
-dialogflow\_actions.servers.move\_to\_human\_action\_server module
+human_interactions.servers.move_to_human_action_server module
 ------------------------------------------------------------------
 
-.. automodule:: dialogflow_actions.servers.move_to_human_action_server
+.. automodule:: human_interactions.servers.move_to_human_action_server
     :members:
     :undoc-members:
     :show-inheritance:
 
-dialogflow\_actions.servers.turn\_to\_human\_action\_server module
+human_interactions.servers.turn_to_human_action_server module
 ------------------------------------------------------------------
 
-.. automodule:: dialogflow_actions.servers.turn_to_human_action_server
+.. automodule:: human_interactions.servers.turn_to_human_action_server
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +24,7 @@ dialogflow\_actions.servers.turn\_to\_human\_action\_server module
 Module contents
 ---------------
 
-.. automodule:: dialogflow_actions.servers
+.. automodule:: human_interactions.servers
     :members:
     :undoc-members:
     :show-inheritance:

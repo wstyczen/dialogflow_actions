@@ -17,5 +17,5 @@
     <param name="head_rotation_velocity" type="double" value="0.4" />
     <param name="min_distance_to_human" type="double" value="1.0" />
     <!-- Nodes -->
-    <node pkg="dialogflow_actions" name="move_to_human_action_server" type="move_to_human_action_server.py" output="screen" />
+    <node pkg="human_interactions" name="move_to_human_action_server" type="move_to_human_action_server.py" output="screen" />
 </launch>

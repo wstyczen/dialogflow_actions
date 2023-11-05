@@ -18,7 +18,7 @@ depends:
 - move_base_msgs
 - rospy
 - actionlib_msgs
-description: The dialogflow_actions package
+description: The human_interactions package
 license: TODO
 maintainers: wstyczen <wstyczen@gmail.com>
 msgs: []

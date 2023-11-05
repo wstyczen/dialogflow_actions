@@ -1,4 +1,4 @@
-# Dialogflow action servers
+# Action servers
 
 ## TurnToHuman
 
@@ -10,15 +10,15 @@
 ### Running the server
 
 ```sh
-roslaunch dialogflow_actions turn_to_human_action_server.launch
+roslaunch human_interactions turn_to_human_action_server.launch
 ```
 
 ### Testing the action
 
 ```sh
-roslaunch dialogflow_actions run_simulation # Launch the simulation for room 012
-roslaunch dialogflow_actions turn_to_human_action_server.launch # Launch the action server
-roslaunch dialogflow_actions turn_to_human_action_client.launch # Launch a simple client to trigger the action manually
+roslaunch human_interactions run_simulation # Launch the simulation for room 012
+roslaunch human_interactions turn_to_human_action_server.launch # Launch the action server
+roslaunch human_interactions turn_to_human_action_client.launch # Launch a simple client to trigger the action manually
 ```
 
 ## MoveToHuman
@@ -30,21 +30,21 @@ roslaunch dialogflow_actions turn_to_human_action_client.launch # Launch a simpl
 ### Running the server
 
 ```sh
-roslaunch dialogflow_actions move_to_human_action_server.launch
+roslaunch human_interactions move_to_human_action_server.launch
 ```
 
 ### Testing the action
 
 ```sh
-roslaunch dialogflow_actions run_simulation # Launch the simulation for room 012
-roslaunch dialogflow_actions move_to_human_action_server.launch # Launch the action server
-roslaunch dialogflow_actions move_to_human_action_client.launch # Launch a simple client to trigger the action manually
+roslaunch human_interactions run_simulation # Launch the simulation for room 012
+roslaunch human_interactions move_to_human_action_server.launch # Launch the action server
+roslaunch human_interactions move_to_human_action_client.launch # Launch a simple client to trigger the action manually
 ```
 
 ## Launching all action servers
 
 ```sh
-roslaunch dialogflow_actions action_servers.launch # Launch all action servers
+roslaunch human_interactions action_servers.launch # Launch all action servers
 ```
 
 ## Code **documentation**

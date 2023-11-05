@@ -3,15 +3,15 @@ import rospy
 import actionlib
 
 # Msgs
-from dialogflow_actions.msg import (
+from human_interactions.msg import (
     MoveToHumanAction,
     MoveToHumanGoal,
 )
 
 # Local scripts
-from action_client_interface import ActionClientInterface
-from dialogflow_actions.utility.logger import ActionClientLogger, Action
-from dialogflow_actions.utility.utils import get_pose_string_representation
+from human_interactions.clients.action_client_interface import ActionClientInterface
+from human_interactions.utility.logger import ActionClientLogger, Action
+from human_interactions.utility.utils import get_pose_string_representation
 
 
 class MoveToHumanActionClient(ActionClientInterface):

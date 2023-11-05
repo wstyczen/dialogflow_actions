@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <!-- TurnToHuman action server -->
-  <include file="$(find dialogflow_actions)/launch/turn_to_human_action_server.launch" />
+  <include file="$(find human_interactions)/launch/turn_to_human_action_server.launch" />
   <!-- MoveToHuman action server -->
-  <include file="$(find dialogflow_actions)/launch/move_to_human_action_server.launch" />
+  <include file="$(find human_interactions)/launch/move_to_human_action_server.launch" />
 </launch>

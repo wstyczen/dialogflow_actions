@@ -43,7 +43,7 @@ class Logger(object):
         _file_name (str): Name of the log file to output the logs to.
     """
 
-    PACKAGE_NAME = "dialogflow_actions"
+    PACKAGE_NAME = "human_interactions"
     PACKAGE_PATH = RosPack().get_path(PACKAGE_NAME)
     LOGS_DIRECTORY = "logs"
 

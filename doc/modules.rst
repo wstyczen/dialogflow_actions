@@ -4,4 +4,4 @@ src
 .. toctree::
    :maxdepth: 4
 
-   dialogflow_actions
+   human_interactions

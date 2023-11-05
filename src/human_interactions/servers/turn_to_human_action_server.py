@@ -6,7 +6,7 @@ from enum import Enum
 from actionlib import SimpleActionClient, SimpleActionServer
 
 # Msgs
-from dialogflow_actions.msg import (
+from human_interactions.msg import (
     TurnToHumanAction,
     TurnToHumanFeedback,
     TurnToHumanResult,
@@ -17,10 +17,10 @@ from std_msgs.msg import Bool, String
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
 # Local scripts
-from dialogflow_actions.utility.logger import ActionServerLogger, Action, LogLevel
-from dialogflow_actions.utility.tf_provider import TFProvider
-from dialogflow_actions.utility.head_controller import HeadController
-from dialogflow_actions.utility.utils import wait_until_server_ready
+from human_interactions.utility.logger import ActionServerLogger, Action, LogLevel
+from human_interactions.utility.tf_provider import TFProvider
+from human_interactions.utility.head_controller import HeadController
+from human_interactions.utility.utils import wait_until_server_ready
 
 # Relevant robot links' tf frames.
 class RobotLink(str, Enum):
