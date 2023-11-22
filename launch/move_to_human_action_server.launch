@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <!-- Args -->
-    <arg name="human_tf" value="human" />
+    <arg name="human_tf" value="human_pose" />
+    <arg name="distance_from_human" type="double" value="1.0" />
     <!-- Tfs -->
     <param name="robot_base_tf" type="string" value="base_link" />
     <param name="human_tf" type="string" value="$(arg human_tf)" />
@@ -15,7 +16,6 @@
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
     <!-- Constants -->
     <param name="head_rotation_velocity" type="double" value="0.4" />
-    <param name="min_distance_to_human" type="double" value="1.0" />
     <!-- Nodes -->
     <node pkg="human_interactions" name="move_to_human_action_server" type="move_to_human_action_server.py" output="screen" />
 </launch>

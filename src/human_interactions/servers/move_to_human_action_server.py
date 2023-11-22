@@ -41,6 +41,8 @@ class MoveToHumanActionServer:
         _head_controller (HeadController): An instance of the HeadController for controlling the robot's head movement.
         _move_base_client (actionlib.SimpleActionClient): The MoveBase action client.
         _plan_service (rospy.ServiceProxy): The service for getting a navigation plan.
+        _human_pose_topic (str): The topic to use for getting the pose of human.
+        _distance_from_human (float): The desired distance from the human.
     """
 
     def __init__(self):
@@ -91,6 +93,10 @@ class MoveToHumanActionServer:
             rospy.get_param("move_base_action_name"),
             self._logger,
         )
+
+        # Initalize goal variables with defaults.
+        self._human_pose_topic = rospy.get_param("human_tf")
+        self._distance_from_human = rospy.get_param("distance_from_human")
 
         self._logger.log("%s server initialization complete." % self._action_name)
         self._initialized = True
@@ -154,7 +160,7 @@ class MoveToHumanActionServer:
             self._logger.log("Can't determine start pose, aborting.", LogLevel.ERROR)
             return
 
-        goal_pose = self.get_pose(rospy.get_param("human_tf"), "map")
+        goal_pose = self.get_pose(self._human_pose_topic, "map")
         if not start_pose:
             self._logger.log("Can't determine goal pose, aborting.", LogLevel.ERROR)
             return
@@ -180,8 +186,7 @@ class MoveToHumanActionServer:
                 + (robot_pose.pose.position.y - human_pose.position.y) ** 2
             )
             plan.poses = filter(
-                lambda pose: get_distance_from_human(pose)
-                >= rospy.get_param("min_distance_to_human"),
+                lambda pose: get_distance_from_human(pose) >= self._distance_from_human,
                 plan.poses,
             )
 
@@ -199,9 +204,7 @@ class MoveToHumanActionServer:
         Move the robot's head to face the human.
         """
         self._logger.log("Moving head.")
-        pose = self.get_pose(
-            rospy.get_param("human_tf"), rospy.get_param("robot_base_tf")
-        )
+        pose = self.get_pose(self._human_pose_topic, rospy.get_param("robot_base_tf"))
         if not pose:
             self._logger.log("Can't determine pose, aborting.", LogLevel.ERROR)
             return
@@ -209,14 +212,14 @@ class MoveToHumanActionServer:
         self._head_controller.point_at(pose.position)
         self._head_controller.wait_till_idle()
 
-    def execute_callback(self, _):
+    def execute_callback(self, goal):
         """
         Callback for handling action requests.
 
         Moves the robot to the vicinity of the human and orients it towards them.
 
         Args:
-            _: Goal(unused).
+            goal (MoveToHumanActionGoal): The goal message.
         """
         self._logger.log("New request received.")
 
@@ -224,6 +227,22 @@ class MoveToHumanActionServer:
             self._logger.log("Server not ready, ignoring request.", LogLevel.WARNING)
             self.publish_result("failure")
             return
+
+        # If provided override the defaults with the values from goal.
+        human_pose_topic = goal.human_pose_topic.data
+        if len(human_pose_topic) > 0:
+            self._human_pose_topic = human_pose_topic
+        distance = goal.distance.data
+        if distance > 0.0:
+            self._distance_from_human = distance
+        self._logger.log(
+            "Received goal: {human pose topic: '%s', distance: %f}"
+            % (human_pose_topic, distance)
+        )
+        self._logger.log(
+            "Used values: {human pose topic: '%s', distance: %f}"
+            % (self._human_pose_topic, self._distance_from_human)
+        )
 
         self._head_controller.reset()
 

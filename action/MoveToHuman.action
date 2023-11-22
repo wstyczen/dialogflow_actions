@@ -1,5 +1,6 @@
 # Goal
-std_msgs/String reason # reason why the server is called (unnecessary, but must action have a goal)
+std_msgs/String human_pose_topic # topic with the human pose
+std_msgs/Float64 distance # desired distance from human
 ---
 # Result
 std_msgs/String status # ('success', 'failure', ..)

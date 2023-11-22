@@ -1,5 +1,5 @@
-# Goal - position for the robot to turn to
-std_msgs/String reason # reason why the server is called (unnecessary, but must action have a goal)
+# Goal
+std_msgs/String human_pose_topic # topic with the human pose
 ---
 # Result
 std_msgs/String status # ('success', 'failure', ..)

@@ -50,6 +50,7 @@ class TurnToHumanActionServer:
         _velocity_publisher (rospy.Publisher): Publisher for velocity commands.
         _tf_provider (TFProvider): An instance of the TFProvider for providing transforms.
         _head_controller (HeadController): An instance of the HeadController for controlling the robot's head movement.
+        _human_pose_topic (str): The topic to use for getting the pose of human.
     """
 
     def __init__(self):
@@ -110,6 +111,9 @@ class TurnToHumanActionServer:
                 self._logger,
             )
 
+        # Initalize the topic for human pose with default value.
+        self._human_pose_topic = rospy.get_param("human_tf")
+
         self._initialized = True
         self._logger.log("%s server initialization complete." % self._action_name)
 
@@ -154,7 +158,7 @@ class TurnToHumanActionServer:
             float: The required angle in radians.
         """
         human_position_in_robot_frame = self._tf_provider.get_tf(
-            rospy.get_param("human_tf"), RobotLink.TORSO.value
+            self._human_pose_topic, RobotLink.TORSO.value
         ).translation
         return math.atan2(
             human_position_in_robot_frame.y, human_position_in_robot_frame.x
@@ -270,7 +274,7 @@ class TurnToHumanActionServer:
             Pose: Relative human pose.
         """
         transform = self._tf_provider.get_tf(
-            rospy.get_param("human_tf"), RobotLink.BASE.value
+            self._human_pose_topic, RobotLink.BASE.value
         )
         if not transform:
             self.abort("Transform unavailable, aborting.")
@@ -282,14 +286,14 @@ class TurnToHumanActionServer:
         """Point the robot's head towards the human."""
         self._head_controller.point_at(self.get_relative_human_pose().position)
 
-    def execute_callback(self, _):
+    def execute_callback(self, goal):
         """
         Callback for handling action requests.
 
         If necessary rotates the robot's torso, but if possible only moves its head to look towards the human.
 
         Args:
-            _: Action goal (unused).
+            goal (TurnToHumanActionGoal): The goal message.
         """
         self._logger.log("New request received.")
         success = True
@@ -298,6 +302,11 @@ class TurnToHumanActionServer:
             self.abort("Server not ready, ignoring request.")
             self.publish_result("failure")
             return
+
+        # Override default value with the goal if provided.
+        goal_topic = goal.human_pose_topic.data
+        if len(goal_topic) > 0:
+            self._human_pose_topic = goal_topic
 
         required_angle = self.get_angle_to_face_human()
         self._logger.log(
