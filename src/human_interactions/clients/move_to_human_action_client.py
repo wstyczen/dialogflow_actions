@@ -46,10 +46,10 @@ class MoveToHumanActionClient(ActionClientInterface):
         Args:
             feedback_msg (MoveToHumanFeedback): Feedback message received from server.
         """
-        self._logger.log(
-            "Server feedback -- current pose: %s"
-            % get_pose_string_representation(feedback_msg.robot_pose),
-        )
+        # self._logger.log(
+        #     "Server feedback -- current pose: %s"
+        #     % get_pose_string_representation(feedback_msg.robot_pose),
+        # )
 
     def get_result_callback(self, _, result_msg):
         """

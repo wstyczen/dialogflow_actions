@@ -47,13 +47,13 @@ class TurnToHumanActionClient(ActionClientInterface):
         Args:
             feedback_msg (TurnToHumanFeedback): Feedback message received from server.
         """
-        self._logger.log(
-            "Server feedback: {moved link: %s, robot's pose: %s}"
-            % (
-                feedback_msg.link.data,
-                get_pose_string_representation(feedback_msg.robot_pose),
-            )
-        )
+        # self._logger.log(
+        #     "Server feedback: {moved link: %s, robot's pose: %s}"
+        #     % (
+        #         feedback_msg.link.data,
+        #         get_pose_string_representation(feedback_msg.robot_pose),
+        #     )
+        # )
 
     def get_result_callback(self, _, result_msg):
         """

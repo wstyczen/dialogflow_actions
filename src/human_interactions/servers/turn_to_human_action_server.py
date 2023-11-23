@@ -280,7 +280,7 @@ class TurnToHumanActionServer:
             self.abort("Transform unavailable, aborting.")
             return
 
-        return TFProvider.get_as_pose(transform)
+        return TFProvider.get_transform_as_pose(transform)
 
     def point_head_at_human(self):
         """Point the robot's head towards the human."""
