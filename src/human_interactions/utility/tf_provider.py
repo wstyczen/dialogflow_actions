@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import math
+
 import rospy
 import tf
-
-from geometry_msgs.msg import Pose, Transform
+from geometry_msgs.msg import Pose, Transform, Quaternion
+from tf.transformations import quaternion_multiply, quaternion_from_euler
 
 
 class TFProvider:
@@ -82,7 +84,7 @@ class TFProvider:
         return self.get_tf(target_frame, MAP_TF, inverse)
 
     @staticmethod
-    def get_as_pose(transform):
+    def get_transform_as_pose(transform):
         """
         Get a corresponding Pose message from Transform message
 
@@ -100,3 +102,35 @@ class TFProvider:
         pose.orientation = transform.rotation
 
         return pose
+
+    @staticmethod
+    def get_quaternion_as_list(quaternion):
+        """
+        Get a list representing the Quaternion message.
+
+        Args:
+            quaternion (Quaternion): A Quaternion message.
+
+        Returns:
+            list[float]: A list representing the quaternion.
+        """
+        return [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
+
+    @staticmethod
+    def get_opposite_orientation(orientation):
+        """
+        Return an orientation facing the opposite direction in the x-y plane by
+        applying the corresponding rotation.
+
+        Args:
+            orientation (Quaternion): The original orientation.
+
+        Returns:
+            Quaternion: Orientation facing the opposite direction.
+        """
+        rotation_quaternion = quaternion_from_euler(0, 0, math.pi)
+        return Quaternion(
+            *quaternion_multiply(
+                TFProvider.get_quaternion_as_list(orientation), rotation_quaternion
+            )
+        )

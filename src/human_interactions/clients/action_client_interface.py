@@ -78,4 +78,4 @@ class ActionClientInterface:
         This method signals the ROS node to shut down and logs the event.
         """
         rospy.signal_shutdown("Shutting down %s client." % self._action_name)
-        self._logger.log("Shutting down %s client.", self._action_name)
+        self._logger.log("Shutting down %s client." % self._action_name)

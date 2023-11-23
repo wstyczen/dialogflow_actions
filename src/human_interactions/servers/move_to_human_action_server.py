@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-import rospy
-import actionlib
 import math
+import time
+
+import actionlib
+import rospy
+from tf.transformations import quaternion_from_euler
 
 # Msgs
+from geometry_msgs.msg import Point, Pose, Quaternion
 from human_interactions.msg import (
     MoveToHumanAction,
     MoveToHumanFeedback,
@@ -13,7 +17,6 @@ from human_interactions.msg import (
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan, GetPlanRequest
-from nav_msgs.srv import GetPlan
 from std_msgs.msg import String
 
 # Local scripts
@@ -96,7 +99,7 @@ class MoveToHumanActionServer:
 
         # Initalize goal variables with defaults.
         self._human_pose_topic = rospy.get_param("human_tf")
-        self._distance_from_human = rospy.get_param("distance_from_human")
+        self._distance_from_human = rospy.get_param("default_distance_from_human")
 
         self._logger.log("%s server initialization complete." % self._action_name)
         self._initialized = True
@@ -143,61 +146,171 @@ class MoveToHumanActionServer:
             Pose: The resulting pose.
         """
         transform = self._tf_provider.get_tf(point, origin)
-        return TFProvider.get_as_pose(transform)
+        return TFProvider.get_transform_as_pose(transform)
 
-    def get_plan(self):
+    def get_plan(self, goal, tolerance=0.5):
         """
-        Request a navigation plan from the MoveBase plan service and make sure
-        the safe distance from human is maintained.
+        Request a navigation plan from the MoveBase plan service to the given
+        destination.
+
+        Args:
+            goal (Pose): The goal in robot's tf.
+            tolerance (float): The x/y goal tolerance when planning.
 
         Returns:
-            list[Pose]: The navigation plan.
+            Optional[Path]: The navigation plan. If the location is not
+                reacheable return None.
         """
-        self._logger.log("Requesting plan.")
-
         start_pose = self.get_pose(rospy.get_param("robot_base_tf"), "map")
         if not start_pose:
             self._logger.log("Can't determine start pose, aborting.", LogLevel.ERROR)
-            return
-
-        goal_pose = self.get_pose(self._human_pose_topic, "map")
-        if not start_pose:
-            self._logger.log("Can't determine goal pose, aborting.", LogLevel.ERROR)
             return
 
         request = GetPlanRequest()
         request.start.header.frame_id = "map"
         request.start.pose = start_pose
         request.goal.header.frame_id = "map"
-        request.goal.pose = goal_pose
-        request.tolerance = 0.5
+        request.goal.pose = goal
+        request.tolerance = tolerance
 
         try:
             response = self._plan_service.call(request)
 
             plan = response.plan
             plan.header.frame_id = "map"
-
-            human_pose = goal_pose
-
-            # Filter points in trajectory that are to close to the human.
-            get_distance_from_human = lambda robot_pose: math.sqrt(
-                (robot_pose.pose.position.x - human_pose.position.x) ** 2
-                + (robot_pose.pose.position.y - human_pose.position.y) ** 2
-            )
-            plan.poses = filter(
-                lambda pose: get_distance_from_human(pose) >= self._distance_from_human,
-                plan.poses,
-            )
-
-            self._logger.log("Returning plan.")
             return plan
-        except rospy.ServiceException as e:
-            self._logger.log(
-                "Exception when calling service %s."
-                % rospy.get_param("move_base_plan_service_name")
+        except rospy.ServiceException:
+            return None
+
+    @staticmethod
+    def get_points_around(center, radius, num_points):
+        """
+        Generate a list of evenly distributed points around a provided center point.
+
+        Args:
+            center (Point): The center point.
+            radius (float): Required distance from the center.
+            num_points (int): Number of points to generate.
+
+        Returns:
+            list[Point]: The list of generated points.
+        """
+        points = []
+        for i in range(num_points):
+            theta = (2 * math.pi * i) / num_points
+            x = center.x + radius * math.cos(theta)
+            y = center.y + radius * math.sin(theta)
+            z = 0
+            points.append(Point(x=x, y=y, z=z))
+        return points
+
+    @staticmethod
+    def get_route_length(plan):
+        """
+        Calculate the length of a planned route.
+
+        Args:
+            plan: A plan with a sequence of poses to follow.
+
+        Returns:
+            Optional[float]: Calculated length of the route when following the
+                plan. Infinity if the plan is None or empty.
+        """
+
+        if plan is None or len(plan.poses) == 0:
+            return float("inf")
+
+        route_length = 0
+        poses = plan.poses
+        for i in range(1, len(poses)):
+            previous_position = poses[i - 1].pose.position
+            current_position = poses[i].pose.position
+            route_length += math.sqrt(
+                (current_position.x - previous_position.x) ** 2
+                + (current_position.y - previous_position.y) ** 2
             )
-            raise Exception(e)
+        return route_length
+
+    def get_destination(self, num_candidates=16):
+        """
+        Determine the robot's most optimal destination to move to. Candidate
+        points are generated and the one that is reacheable with the shortest
+        route is selected.
+
+        Args:
+            num_candidates (int): How many candidate destination should be checked.
+                A high number could allow for better result, but could also take
+                too long to calculate.
+
+        Returns:
+            Optional[Pose]: The destination pose for the robot,
+                or None if it can't be determined.
+        """
+
+        human_pose = self.get_pose(self._human_pose_topic, "map")
+        if not human_pose:
+            self._logger.log("Can't determine human pose, aborting.", LogLevel.ERROR)
+            return
+
+        start_time = time.time()
+
+        self._logger.log(
+            "Choosing a destination %.3f from the human." % self._distance_from_human
+        )
+        # Generate points with the requested distance around the human
+        # position to choose from.
+        human_position = human_pose.position
+        candidates = self.get_points_around(
+            human_position, self._distance_from_human, num_candidates
+        )
+        # Function to calculate the final orientation the robot should have
+        # to end up facing the human based on their relative position.
+        get_orientation_to_face_human = lambda robot_position: Quaternion(
+            *quaternion_from_euler(
+                0,
+                0,
+                math.atan2(
+                    human_position.y - robot_position.y,
+                    human_position.x - robot_position.x,
+                ),
+            )
+        )
+        # Get plans for all the candidates.
+        plans = [
+            self.get_plan(
+                Pose(
+                    position=candidate,
+                    orientation=get_orientation_to_face_human(candidate),
+                )
+            )
+            for candidate in candidates
+        ]
+        # Abort if a route can't be planned to any destination.
+        if all(plan is None for plan in plans):
+            self._logger.log(
+                "Could not find a plan to any of the possible points around the human."
+            )
+            return None
+        # Calculate the length of each planned route.
+        route_lengths = [self.get_route_length(plan) for plan in plans]
+        # Choose best plan (the one with the shortests route).
+        best_plan_index = route_lengths.index(min(route_lengths))
+
+        chosen_destination = candidates[best_plan_index]
+        self._logger.log(
+            "Chosen goal {x: %f, y: %f, z: %f} with route length of %.2f meters."
+            % (
+                chosen_destination.x,
+                chosen_destination.y,
+                chosen_destination.z,
+                route_lengths[best_plan_index],
+            )
+        )
+        self._logger.log(
+            "Choosing destination took %.3f seconds." % (time.time() - start_time)
+        )
+
+        return plans[best_plan_index].poses[-1]
 
     def move_head(self):
         """
@@ -246,15 +359,15 @@ class MoveToHumanActionServer:
 
         self._head_controller.reset()
 
-        plan = self.get_plan()
-        if plan and len(plan.poses) > 0:
-            self._logger.log("Moving robot...")
-            goal_pose = plan.poses[-1]
+        destination = self.get_destination()
+        if destination is not None:
             navigation_goal = MoveBaseGoal()
-            navigation_goal.target_pose = goal_pose
+            navigation_goal.target_pose = destination
+
             self._move_base_client.send_goal(navigation_goal)
             while not self._move_base_client.wait_for_result(rospy.Duration(0.5)):
                 self.publish_feedback()
+
             self.move_head()
             self.publish_result("success")
         else:
