@@ -1,6 +1,13 @@
-# Action servers
+# Human Interactions
 
-## TurnToHuman
+## Dependencies
+
+- ROS packages
+
+  - [tiago_sim_integration](https://github.com/RCPRG-ros-pkg/tiago_sim_integration)
+  - [tasker](https://github.com/RCPRG-ros-pkg/tasker)
+
+## TurnToHuman action
 
 > When called, orients the robots to face the human.
 >
@@ -16,12 +23,12 @@ roslaunch human_interactions turn_to_human_action_server.launch
 ### Testing the action
 
 ```sh
-roslaunch human_interactions run_simulation # Launch the simulation for room 012
+roslaunch human_interactions run_simulation.launch # Launch the simulation for room 012
 roslaunch human_interactions turn_to_human_action_server.launch # Launch the action server
 roslaunch human_interactions turn_to_human_action_client.launch # Launch a simple client to trigger the action manually
 ```
 
-## MoveToHuman
+## MoveToHuman action
 
 > This action moves the robot to the vicinity of the human, while maintaining safe distance.
 >
@@ -36,7 +43,7 @@ roslaunch human_interactions move_to_human_action_server.launch
 ### Testing the action
 
 ```sh
-roslaunch human_interactions run_simulation # Launch the simulation for room 012
+roslaunch human_interactions run_simulation.launch # Launch the simulation for room 012
 roslaunch human_interactions move_to_human_action_server.launch # Launch the action server
 roslaunch human_interactions move_to_human_action_client.launch # Launch a simple client to trigger the action manually
 ```
@@ -47,7 +54,7 @@ roslaunch human_interactions move_to_human_action_client.launch # Launch a simpl
 roslaunch human_interactions action_servers.launch # Launch all action servers
 ```
 
-## Code **documentation**
+## Code documentation
 
 > Sphynx documentation.
 
