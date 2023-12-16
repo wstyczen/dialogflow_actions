@@ -1,0 +1,14 @@
+<launch>
+  <!-- Could set this here, but it would only be set for processes launched from here. -->
+  <!-- <env name="ROS_MASTER_URI" value="http://192.168.18.66:11311" /> -->
+  <!-- <env name="ROS_IP" value="192.168.61.146" /> -->
+
+  <!-- Apparently this rviz config file should be run for Rico to navigate properly. -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tiago_2dnav)/config/rviz/navigation_public_sim.rviz" />
+
+  <!-- Post human actor pose & show in rviz. -->
+  <include file="$(find human_interactions)/launch/human_actor.launch" />
+
+  <!-- Run human visibility detection. -->
+  <include file="$(find human_interactions)/launch/human_visibility_detection.launch" />
+</launch>
