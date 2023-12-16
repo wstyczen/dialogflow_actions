@@ -3,22 +3,9 @@
   <!-- Room 012 sim -->
   <include file="$(find tiago_sim_integration)/launch/tiago_navigation_public_012_new.launch" />
 
-  <!-- Actors -->
-  <param name="human_rviz_model" value="file://$(find tasker)/makehuman/Male/male.dae" />
-  <!-- Test poses -->
-  <arg name="human_height" default="1.5" />
-  <arg name="human_pose_1" default="0.6 8.9 $(arg human_height) 0 0 0 1" />
-  <arg name="human_pose_2" default="3.5 6.0 $(arg human_height) 0 0 0 1" />
-  <arg name="human_pose_3" default="0.9 0.9 $(arg human_height) 0 0 0 1" />
+  <!-- Post human actor pose & show in rviz. -->
+  <include file="$(find human_interactions)/launch/human_actor.launch" />
 
-  <!-- Actor 1 -->
-  <arg name="human_pose" default="$(arg human_pose_1)" />
-  <!-- Publish pose -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="$(arg human_pose) map human_pose" />
-  <!-- Publish marker for rviz -->
-  <node name="human_marker_publisher" pkg="human_interactions" type="publish_human_marker.py" output="screen">
-    <param name="topic" value="/human_marker" />
-    <param name="pose" value="$(arg human_pose)" />
-  </node>
-
+  <!-- Run human visibility detection. -->
+  <include file="$(find human_interactions)/launch/human_visibility_detection.launch" />
 </launch>
