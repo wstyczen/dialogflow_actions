@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Run person detection -->
+  <arg name="image_topic" value="/xtion/rgb/image_raw" />
+  <param name="image_topic" value="$(arg image_topic)" />
+
+  <!-- roslaunch pal_person_detector_opencv detector.launch image:=/xtion/rgb/image_raw -->
+  <include file="$(find pal_person_detector_opencv)/launch/detector.launch">
+    <arg name="image" value="$(arg image_topic)" />
+  </include>
+
+  <!-- To show debug window run from console:
+    rosrun rqt_image_view rqt_image_view
+  and select '/person_detector/debug' -->
+
+  <!-- For capturing camera frames -->
+
+  <!-- Post a throttled raw image topic -->
+  <!-- rosrun topic_tools throttle messages $(arg image_topic) 2.0 $(arg throttled_image_topic) -->
+  <!-- <arg name="throttled_image_topic" value="/throttled_image_raw" />
+  <arg name="throttled_image_rate" value="2.0" />
+  <node pkg="topic_tools" type="throttle" name="image_throttle" output="screen" args="messages $(arg image_topic) 2.0" /> -->
+</launch>

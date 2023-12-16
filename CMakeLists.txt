@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   move_base_msgs
   nav_msgs
   pal_common_msgs
+  pal_detection_msgs
   rospy
   rospack
   sensor_msgs
@@ -30,7 +31,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS actionlib actionlib_msgs geometry_msgs move_base_msgs nav_msgs pal_common_msgs rospy sensor_msgs std_msgs tf
+  CATKIN_DEPENDS actionlib actionlib_msgs geometry_msgs move_base_msgs nav_msgs pal_common_msgs pal_detection_msgs rospy sensor_msgs std_msgs tf
 )
 
 include_directories(${catkin_INCLUDE_DIRS})
