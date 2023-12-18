@@ -5,6 +5,7 @@ from actionlib import SimpleActionClient, GoalStatus
 # Msgs
 from geometry_msgs.msg import Point, Vector3
 from control_msgs.msg import PointHeadAction, PointHeadGoal
+from pal_common_msgs.msg import DisableAction, DisableGoal
 
 # Local scripts
 from logger import Logger
@@ -35,6 +36,24 @@ class HeadController:
         )
         self._logger.log("Head controller ready.")
 
+        # Service for disabling/enablings automatic head movement.
+        self._should_disable_auto_head_movement = rospy.get_param(
+            "disable_auto_head_movement", False
+        )
+        if self._should_disable_auto_head_movement:
+            self._disable_action_server = SimpleActionClient(
+                rospy.get_param("disable_autohead_action"), DisableAction
+            )
+            wait_until_server_ready(
+                self._disable_action_server,
+                rospy.get_param("disable_autohead_action"),
+                self._logger,
+            )
+
+    def disable_automatic_head_movement(self):
+        self._logger.log("Disabling automatic head movement.")
+        self._disable_action_server.send_goal(DisableGoal())
+
     def point_at(self, point):
         """
         Point the robot's head at a specified point.
@@ -45,6 +64,9 @@ class HeadController:
         Returns:
             bool: Whether pointing action was successful.
         """
+        if self._should_disable_auto_head_movement:
+            self.disable_automatic_head_movement()
+
         self._logger.log(
             "Pointing head at {x: %f, y: %f, z: %f}" % (point.x, point.y, point.z)
         )

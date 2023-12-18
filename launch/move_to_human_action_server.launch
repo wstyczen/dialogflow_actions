@@ -7,6 +7,7 @@
     <param name="human_tf" type="string" value="$(arg human_tf)" />
     <param name="point_head_tf" type="string" value="/head_controller/point_head_action/tilt_link" />
     <!-- Actions & services -->
+    <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
     <param name="move_to_human_action_name" type="string" value="/move_to_human" />
     <param name="move_base_action_name" type="string" value="/move_base" />
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
