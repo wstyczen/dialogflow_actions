@@ -20,6 +20,9 @@ class CameraCapture:
             image_msg, desired_encoding="passthrough"
         )
 
+    def has_frame(self):
+        return self._image is not None
+
     def save_last_frame(self, path):
         if self._image is None:
             rospy.logerr(
@@ -27,9 +30,11 @@ class CameraCapture:
                     self._image_topic, path
                 )
             )
+            return False
 
         cv2.imwrite(path, self._image)
         rospy.loginfo("Saved last received camera frame to {}.".format(path))
+        return True
 
 
 if __name__ == "__main__":
@@ -37,9 +42,10 @@ if __name__ == "__main__":
 
     camera_capture = CameraCapture()
 
-    # Save the current camera frame every couple of seconds
-    rate = rospy.Rate(1)  # Hz
-    while True:
-        camera_capture.save_last_frame("/tmp/image.png")
-
+    # Wait until a frame from camera is received and save it.
+    print("Waiting for a frame from camera...")
+    rate = rospy.Rate(10)
+    while not camera_capture.has_frame():
         rate.sleep()
+
+    camera_capture.save_last_frame("/tmp/image.png")

@@ -231,7 +231,7 @@ class MoveToHumanActionServer:
             )
         return route_length
 
-    def get_destination(self, num_candidates=16):
+    def get_destination(self, num_candidates=8):
         """
         Determine the robot's most optimal destination to move to. Candidate
         points are generated and the one that is reacheable with the shortest
@@ -255,7 +255,7 @@ class MoveToHumanActionServer:
         start_time = time.time()
 
         self._logger.log(
-            "Choosing a destination %.3f from the human." % self._distance_from_human
+            "Choosing a destination %.2fm from the human." % self._distance_from_human
         )
         # Generate points with the requested distance around the human
         # position to choose from.

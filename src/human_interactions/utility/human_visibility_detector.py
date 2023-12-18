@@ -25,5 +25,5 @@ if __name__ == "__main__":
     rate = rospy.Rate(1)
 
     while not rospy.is_shutdown():
-        print(f"\rHuman visible: {human_detector.is_visible()}", end="\r")
+        print("\rHuman visible: {}".format(human_detector.is_visible()))
         rate.sleep()

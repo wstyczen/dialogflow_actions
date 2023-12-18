@@ -6,6 +6,9 @@
   <!-- Apparently this rviz config file should be run for Rico to navigate properly. -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tiago_2dnav)/config/rviz/navigation_public_sim.rviz" />
 
+  <!-- Disable automatic head movement before launching action servers -->
+  <param name="disable_auto_head_movement" type="bool" value="true" />
+
   <!-- Post human actor pose & show in rviz. -->
   <include file="$(find human_interactions)/launch/human_actor.launch" />
 

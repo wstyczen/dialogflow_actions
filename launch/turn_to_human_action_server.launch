@@ -20,8 +20,8 @@
     <param name="command_velocity_topic" type="string" value="/joy_vel" />
     <!-- Constants -->
     <param name="use_joy_action" type="bool" value="true" />
-    <param name="torso_rotation_velocity" type="double" value="0.6" />
-    <param name="head_rotation_velocity" type="double" value="0.8" />
+    <param name="torso_rotation_velocity" type="double" value="0.8" />
+    <param name="head_rotation_velocity" type="double" value="1.0" />
     <param name="max_head_rotation" type="double" value="1.3" />
     <!-- Nodes -->
     <node pkg="human_interactions" name="turn_to_human_action_server" type="turn_to_human_action_server.py" output="screen" />

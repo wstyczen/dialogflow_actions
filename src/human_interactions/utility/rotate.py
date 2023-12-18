@@ -14,10 +14,10 @@ if __name__ == "__main__":
 
     stop = lambda: publish_rotation_velocity(0.0)
     rotate = lambda: publish_rotation_velocity(
-        rospy.get_param("~velocity", default=0.5)
+        rospy.get_param("~velocity", default=1.0)
     )
 
-    loop_rate = rospy.Rate(30)
+    loop_rate = rospy.Rate(20)
     while True:
         rotate()
         # stop()

@@ -13,6 +13,7 @@ from human_interactions.msg import (
 )
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from pal_common_msgs.msg import DisableAction, DisableGoal
 from std_msgs.msg import Bool, String
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
 
@@ -109,6 +110,16 @@ class TurnToHumanActionServer:
                 self._joy_action_server,
                 rospy.get_param("joy_priority_action"),
                 self._logger,
+            )
+
+        self._should_disable_auto_head_movement = rospy.get_param("disable_auto_head_movement", False)
+        if self._should_disable_auto_head_movement:
+            self._logger.log("Disabling automatic head movement.")
+            self._disable_action_server = SimpleActionClient(
+                rospy.get_param("disable_autohead_action"), DisableAction
+            )
+            wait_until_server_ready(
+                self._disable_action_server, rospy.get_param("disable_autohead_action"), self._logger
             )
 
         # Initalize the topic for human pose with default value.
@@ -213,7 +224,7 @@ class TurnToHumanActionServer:
             bool: Whether the action completed successfully.
         """
         EPS = 0.05  # Acceptable orientation error
-        r = rospy.Rate(30)  # Loop sleep rate
+        r = rospy.Rate(15)  # Loop sleep rate
         success = True
 
         default_torso_velocity = rospy.get_param("torso_rotation_velocity")
@@ -297,6 +308,9 @@ class TurnToHumanActionServer:
         """
         self._logger.log("New request received.")
         success = True
+        if self._should_disable_auto_head_movement:
+            self._logger.log("Disabling automatic head movement.")
+            self._disable_action_server.send_goal(DisableGoal())
 
         if not self._initialized:
             self.abort("Server not ready, ignoring request.")
