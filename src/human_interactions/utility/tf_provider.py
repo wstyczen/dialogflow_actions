@@ -134,3 +134,13 @@ class TFProvider:
                 TFProvider.get_quaternion_as_list(orientation), rotation_quaternion
             )
         )
+
+    @staticmethod
+    def get_orientation_after_yaw_rotation(original_orientation, yaw_rotation):
+        rotation_quaternion = quaternion_from_euler(0, 0, yaw_rotation)
+        return Quaternion(
+            *quaternion_multiply(
+                TFProvider.get_quaternion_as_list(original_orientation),
+                rotation_quaternion,
+            )
+        )
