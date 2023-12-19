@@ -11,7 +11,6 @@
     <param name="move_to_human_action_name" type="string" value="/move_to_human" />
     <param name="move_base_action_name" type="string" value="/move_base" />
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
-    <param name="move_base_plan_service_name" type="string" value="/move_base/make_plan" />
     <!-- Topics -->
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
     <!-- Constants -->

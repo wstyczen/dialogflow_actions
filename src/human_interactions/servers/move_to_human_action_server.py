@@ -16,7 +16,6 @@ from human_interactions.msg import (
 )
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
-from nav_msgs.srv import GetPlan, GetPlanRequest
 from std_msgs.msg import String
 
 # Local scripts
@@ -24,6 +23,7 @@ from human_interactions.utility.logger import ActionServerLogger, Action, LogLev
 from human_interactions.utility.tf_provider import TFProvider
 from human_interactions.utility.head_controller import HeadController
 from human_interactions.utility.utils import wait_until_server_ready
+from human_interactions.utility.planner import Planner
 
 
 class MoveToHumanActionServer:
@@ -40,10 +40,10 @@ class MoveToHumanActionServer:
         _action_server (actionlib.SimpleActionServer): The action server instance.
         _current_odom (Odometry): The current odometry of the robot.
         _odom_subscriber (rospy.Subscriber): Subscriber for robot's Odometry messages.
-        _tf_provider (TFProvider): An instance of the TFProvider for providing transforms.
-        _head_controller (HeadController): An instance of the HeadController for controlling the robot's head movement.
+        _tf_provider (TFProvider): For providing transforms between frames.
+        _head_controller (HeadController): For controlling the robot's head movement.
+        _move_base_planner (Planner): Provides a trajectory to reach a goal pose.
         _move_base_client (actionlib.SimpleActionClient): The MoveBase action client.
-        _plan_service (rospy.ServiceProxy): The service for getting a navigation plan.
         _human_pose_topic (str): The topic to use for getting the pose of human.
         _distance_from_human (float): The desired distance from the human.
     """
@@ -81,14 +81,12 @@ class MoveToHumanActionServer:
         # Head controller
         self._head_controller = HeadController()
 
+        # Planner service wrapper
+        self._planner = Planner()
+
         # Action servers
         self._move_base_client = actionlib.SimpleActionClient(
             rospy.get_param("move_base_action_name"), MoveBaseAction
-        )
-
-        # Init odom plan service
-        self._plan_service = rospy.ServiceProxy(
-            rospy.get_param("move_base_plan_service_name"), GetPlan
         )
 
         wait_until_server_ready(
@@ -147,40 +145,6 @@ class MoveToHumanActionServer:
         """
         transform = self._tf_provider.get_tf(point, origin)
         return TFProvider.get_transform_as_pose(transform)
-
-    def get_plan(self, goal, tolerance=0.5):
-        """
-        Request a navigation plan from the MoveBase plan service to the given
-        destination.
-
-        Args:
-            goal (Pose): The goal in robot's tf.
-            tolerance (float): The x/y goal tolerance when planning.
-
-        Returns:
-            Optional[Path]: The navigation plan. If the location is not
-                reacheable return None.
-        """
-        start_pose = self.get_pose(rospy.get_param("robot_base_tf"), "map")
-        if not start_pose:
-            self._logger.log("Can't determine start pose, aborting.", LogLevel.ERROR)
-            return
-
-        request = GetPlanRequest()
-        request.start.header.frame_id = "map"
-        request.start.pose = start_pose
-        request.goal.header.frame_id = "map"
-        request.goal.pose = goal
-        request.tolerance = tolerance
-
-        try:
-            response = self._plan_service.call(request)
-
-            plan = response.plan
-            plan.header.frame_id = "map"
-            return plan
-        except rospy.ServiceException:
-            return None
 
     @staticmethod
     def get_points_around(center, radius, num_points):
@@ -276,12 +240,14 @@ class MoveToHumanActionServer:
             )
         )
         # Get plans for all the candidates.
+        start_pose = self.get_pose(rospy.get_param("robot_base_tf"), "map")
         plans = [
-            self.get_plan(
-                Pose(
+            self._planner.get_plan(
+                start_pose=start_pose,
+                goal_pose=Pose(
                     position=candidate,
                     orientation=get_orientation_to_face_human(candidate),
-                )
+                ),
             )
             for candidate in candidates
         ]
