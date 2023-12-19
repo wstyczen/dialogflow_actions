@@ -45,7 +45,8 @@ class FaceRegonition:
 
         plt.savefig(self.RESULT_IMAGE_PATH)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     rospy.init_node("face_recognition")
 
     human_detector = FaceRegonition()
