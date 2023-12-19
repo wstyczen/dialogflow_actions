@@ -23,7 +23,7 @@ class CameraCapture:
     def has_frame(self):
         return self._image is not None
 
-    def save_last_frame(self, path):
+    def _save_last_frame(self, path):
         if self._image is None:
             rospy.logerr(
                 "Camera image was not found on .{}, failed to save it to {}.".format(
@@ -36,6 +36,13 @@ class CameraCapture:
         rospy.loginfo("Saved last received camera frame to {}.".format(path))
         return True
 
+    def save_last_frame(self, path):
+        rate = rospy.Rate(10)
+        while not self.has_frame():
+            rate.sleep()
+
+        self._save_last_frame(path)
+
 
 if __name__ == "__main__":
     rospy.init_node("camera_capture")
@@ -44,8 +51,4 @@ if __name__ == "__main__":
 
     # Wait until a frame from camera is received and save it.
     print("Waiting for a frame from camera...")
-    rate = rospy.Rate(10)
-    while not camera_capture.has_frame():
-        rate.sleep()
-
-    camera_capture.save_last_frame("/tmp/image.png")
+    camera_capture.save_last_frame("/tmp/frame.png")
