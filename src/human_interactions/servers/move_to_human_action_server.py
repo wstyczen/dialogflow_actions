@@ -195,16 +195,23 @@ class MoveToHumanActionServer:
             )
         return route_length
 
-    def get_destination(self, num_candidates=8):
+    def get_destination(self, num_candidates=16, use_heuristic=False):
         """
         Determine the robot's most optimal destination to move to. Candidate
         points are generated and the one that is reacheable with the shortest
         route is selected.
 
+        If use_heuristic flag is set to True, a reacheable point with the
+        shortest distance in a straight line from robot's initial position is
+        chosen instead. This does not guarantee the most optimal solution, but
+        is much more efficient.
+
         Args:
-            num_candidates (int): How many candidate destination should be checked.
-                A high number could allow for better result, but could also take
-                too long to calculate.
+            num_candidates (int, optional): How many candidate destinations
+                should be checked. A high number could allow for better result,
+                but could also take too long to calculate.
+            use_heuristic (bool, optional): Whether a heuristic should be used
+                to choose the destination.
 
         Returns:
             Optional[Pose]: The destination pose for the robot,
@@ -219,7 +226,8 @@ class MoveToHumanActionServer:
         start_time = time.time()
 
         self._logger.log(
-            "Choosing a destination %.2fm from the human." % self._distance_from_human
+            "Choosing an optimal destination %.2fm from the human. Using heuristic: %r."
+            % (self._distance_from_human, use_heuristic)
         )
         # Generate points with the requested distance around the human
         # position to choose from.
@@ -241,42 +249,80 @@ class MoveToHumanActionServer:
         )
         # Get plans for all the candidates.
         start_pose = self.get_pose(rospy.get_param("robot_base_tf"), "map")
-        plans = [
-            self._planner.get_plan(
-                start_pose=start_pose,
-                goal_pose=Pose(
-                    position=candidate,
-                    orientation=get_orientation_to_face_human(candidate),
-                ),
-            )
-            for candidate in candidates
-        ]
-        # Abort if a route can't be planned to any destination.
-        if all(plan is None for plan in plans):
-            self._logger.log(
-                "Could not find a plan to any of the possible points around the human."
-            )
-            return None
-        # Calculate the length of each planned route.
-        route_lengths = [self.get_route_length(plan) for plan in plans]
-        # Choose best plan (the one with the shortests route).
-        best_plan_index = route_lengths.index(min(route_lengths))
+        start_position = start_pose.position
 
-        chosen_destination = candidates[best_plan_index]
-        self._logger.log(
+        log_chosen_destination = lambda destination, route_length: self._logger.log(
             "Chosen goal {x: %f, y: %f, z: %f} with route length of %.2f meters."
             % (
-                chosen_destination.x,
-                chosen_destination.y,
-                chosen_destination.z,
-                route_lengths[best_plan_index],
+                destination.x,
+                destination.y,
+                destination.z,
+                route_length,
             )
         )
+
+        def get_optimal_destination():
+            # Get plans for all the candidates.
+            plans = [
+                self._planner.get_plan(
+                    start_pose=start_pose,
+                    goal_pose=Pose(
+                        position=candidate,
+                        orientation=get_orientation_to_face_human(candidate),
+                    ),
+                )
+                for candidate in candidates
+            ]
+            # Abort if a route can't be planned to any destination.
+            if all(plan is None for plan in plans):
+                self._logger.log(
+                    "Could not find a plan to any of the possible points around the human."
+                )
+                return None
+            # Calculate the length of each planned route.
+            route_lengths = [self.get_route_length(plan) for plan in plans]
+            # Choose best plan (the one with the shortests route).
+            best_plan_index = route_lengths.index(min(route_lengths))
+
+            chosen_destination = candidates[best_plan_index]
+            log_chosen_destination(chosen_destination, route_lengths[best_plan_index])
+
+            return plans[best_plan_index].poses[-1]
+
+        def get_destination_by_heuristic():
+            # Sort the points by the distance they are from the start in a straight
+            # line.
+            get_distance = lambda point: math.sqrt(
+                (point.x - start_position.x) ** 2 + (point.y - start_position.y) ** 2
+            )
+            candidates.sort(key=get_distance)
+
+            # Iterate over the sorted points and return the first with a valid
+            # route available.
+            for candidate_position in candidates:
+                plan = self._planner.get_plan(
+                    start_pose=start_pose,
+                    goal_pose=Pose(
+                        position=candidate_position,
+                        orientation=get_orientation_to_face_human(candidate_position),
+                    ),
+                )
+                if plan is not None and len(plan.poses) > 0:
+                    log_chosen_destination(
+                        candidate_position, self.get_route_length(plan)
+                    )
+                    return plan.poses[-1]
+
+            return None
+
         self._logger.log(
             "Choosing destination took %.3f seconds." % (time.time() - start_time)
         )
-
-        return plans[best_plan_index].poses[-1]
+        return (
+            get_optimal_destination()
+            if not use_heuristic
+            else get_destination_by_heuristic()
+        )
 
     def move_head(self):
         """
@@ -325,7 +371,9 @@ class MoveToHumanActionServer:
 
         self._head_controller.reset()
 
-        destination = self.get_destination()
+        destination = self.get_destination(
+            use_heuristic=rospy.get_param("use_route_planning_heuristic", default=False)
+        )
         if destination is not None:
             navigation_goal = MoveBaseGoal()
             navigation_goal.target_pose = destination
@@ -334,8 +382,11 @@ class MoveToHumanActionServer:
             while not self._move_base_client.wait_for_result(rospy.Duration(0.5)):
                 self.publish_feedback()
 
-            self.move_head()
-            self.publish_result("success")
+            if self._move_base_client.get_state() == 3: # SUCCEEDED = 3
+                self.move_head()
+                self.publish_result("success")
+            else:
+                self.publish_result("failure")
         else:
             self._logger.log("Failed to plan movement.")
             self.publish_result("failure")

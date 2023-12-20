@@ -13,7 +13,7 @@
   <arg name="rico_human_pose_3" default="5.0 2.05 $(arg human_height) 0 0 0 1" />
 
   <!-- Actor 1 -->
-  <arg name="human_pose" default="$(arg sim_human_pose_4)" />
+  <arg name="human_pose" default="$(arg sim_human_pose_1)" />
   <!-- Publish pose -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="human_publisher" args="$(arg human_pose) map human_pose" />
   <!-- Publish marker for rviz -->

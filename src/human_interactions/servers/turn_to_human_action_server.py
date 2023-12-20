@@ -217,7 +217,9 @@ class TurnToHumanActionServer:
         # applying the necessary rotation.
         goal_pose = self._current_odom.pose.pose
         print("Default orientation:", goal_pose.orientation)
-        goal_pose.orientation = TFProvider.get_orientation_after_yaw_rotation(goal_pose.orientation, initial_rotation_required)
+        goal_pose.orientation = TFProvider.get_orientation_after_yaw_rotation(
+            goal_pose.orientation, initial_rotation_required
+        )
         print("After rotation:", goal_pose.orientation)
 
         navigation_goal = MoveBaseGoal()
