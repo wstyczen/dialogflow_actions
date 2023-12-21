@@ -1,9 +1,8 @@
 #!/usr/bin/env python
+import rospy
 import math
 from enum import Enum
 
-import actionlib
-import rospy
 from actionlib import SimpleActionClient, SimpleActionServer
 
 # Msgs
@@ -12,8 +11,7 @@ from human_interactions.msg import (
     TurnToHumanFeedback,
     TurnToHumanResult,
 )
-from geometry_msgs.msg import PoseStamped, Twist
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool, String
 from twist_mux_msgs.msg import JoyPriorityAction, JoyPriorityGoal
@@ -49,8 +47,8 @@ class TurnToHumanActionServer:
         _current_odom (Odometry): The current odometry of the robot.
         _odom_subscriber (rospy.Subscriber): Subscriber for robot's Odometry messages.
         _joy_priority_subscriber (rospy.Subscriber): Subscriber for joy priority status.
+        _velocity_publisher (rospy.Publisher): Publisher for velocity commands.
         _tf_provider (TFProvider): An instance of the TFProvider for providing transforms.
-        _move_base_client (actionlib.SimpleActionClient): The MoveBase action client.
         _head_controller (HeadController): An instance of the HeadController for controlling the robot's head movement.
         _human_pose_topic (str): The topic to use for getting the pose of human.
     """
@@ -75,12 +73,9 @@ class TurnToHumanActionServer:
         )
         self._action_server.start()
 
-        # Init complementary action clients
+        # Init complementary action servers
         self._joy_action_server = SimpleActionClient(
             rospy.get_param("joy_priority_action"), JoyPriorityAction
-        )
-        self._move_base_client = actionlib.SimpleActionClient(
-            rospy.get_param("move_base_action_name"), MoveBaseAction
         )
 
         # Current state variables
@@ -93,6 +88,11 @@ class TurnToHumanActionServer:
         )
         self._joy_priority_subscriber = rospy.Subscriber(
             rospy.get_param("joy_priority_topic"), Bool, self.joy_priority_callback
+        )
+
+        # Publishers
+        self._velocity_publisher = rospy.Publisher(
+            rospy.get_param("command_velocity_topic"), Twist, queue_size=1000
         )
 
         # Transform provider
@@ -110,12 +110,6 @@ class TurnToHumanActionServer:
                 rospy.get_param("joy_priority_action"),
                 self._logger,
             )
-
-        wait_until_server_ready(
-            self._move_base_client,
-            rospy.get_param("move_base_action_name"),
-            self._logger,
-        )
 
         # Initalize the topic for human pose with default value.
         self._human_pose_topic = rospy.get_param("human_tf")
@@ -196,6 +190,17 @@ class TurnToHumanActionServer:
         result.link = String(used_link)
         self._action_server.set_succeeded(result)
 
+    def publish_torso_velocity_command(self, angular_velocity):
+        """
+        Publish torso velocity commands.
+
+        Args:
+            angular_velocity (float): The angular velocity for the z-axis (yaw) of the torso rotation.
+        """
+        velocity = Twist()
+        velocity.angular.z = angular_velocity
+        self._velocity_publisher.publish(velocity)
+
     def call_joy_priority_action(self):
         """Call the JoyPriority action server."""
         self._joy_action_server.send_goal(JoyPriorityGoal())
@@ -207,33 +212,59 @@ class TurnToHumanActionServer:
         Returns:
             bool: Whether the action completed successfully.
         """
+        EPS = 0.05  # Acceptable orientation error
+        r = rospy.Rate(15)  # Loop sleep rate
+        success = True
+
+        default_torso_velocity = rospy.get_param("torso_rotation_velocity")
+        rotate_right = lambda: self.publish_torso_velocity_command(
+            default_torso_velocity
+        )
+        rotate_left = lambda: self.publish_torso_velocity_command(
+            -default_torso_velocity
+        )
+        stop = lambda: self.publish_torso_velocity_command(0.0)
+
         initial_rotation_required = self.get_angle_to_face_human()
         self._logger.log(
             "Rotation required: %f radians --- %i degrees"
             % (initial_rotation_required, math.degrees(initial_rotation_required))
         )
 
-        # Set a goal pose with the same position, but the orientation after
-        # applying the necessary rotation.
-        goal_pose = self._current_odom.pose.pose
-        print("Default orientation:", goal_pose.orientation)
-        goal_pose.orientation = TFProvider.get_orientation_after_yaw_rotation(
-            goal_pose.orientation, initial_rotation_required
-        )
-        print("After rotation:", goal_pose.orientation)
+        locked_state = self._current_joy_priority.data
+        if not locked_state:
+            self.call_joy_priority_action()
 
-        navigation_goal = MoveBaseGoal()
-        navigation_goal.target_pose = PoseStamped()
-        navigation_goal.target_pose.header.frame_id = "map"
-        navigation_goal.target_pose.header.stamp = rospy.Time.now()
-        navigation_goal.target_pose.pose = goal_pose
+        while not rospy.is_shutdown():
+            if self._action_server.is_preempt_requested() or rospy.is_shutdown():
+                self._logger.log("%s: preempted." % self._action_name)
+                self._action_server.set_preempted()
+                stop()
+                success = False
+                break
 
-        # Send a goal to the move base server and wait for completion.
-        self._move_base_client.send_goal(navigation_goal)
-        while not self._move_base_client.wait_for_result(rospy.Duration(0.5)):
+            angle_err = self.get_angle_to_face_human()
+            self._logger.log(
+                "Angle error: %f radians --- %i degrees"
+                % (angle_err, math.degrees(angle_err))
+            )
+            # Rotate until within acceptable error or exceeded.
+            if abs(angle_err) < EPS or angle_err * initial_rotation_required < 0:
+                stop()
+                break
+
+            if angle_err > 0:
+                rotate_right()
+            else:
+                rotate_left()
             self.publish_feedback("torso")
 
-        return True
+            r.sleep()
+
+        if not locked_state:
+            self.call_joy_priority_action()
+
+        return success
 
     def get_relative_human_pose(self):
         """
