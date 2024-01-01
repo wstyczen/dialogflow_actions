@@ -244,10 +244,10 @@ class TurnToHumanActionServer:
                 break
 
             angle_err = self.get_angle_to_face_human()
-            self._logger.log(
-                "Angle error: %f radians --- %i degrees"
-                % (angle_err, math.degrees(angle_err))
-            )
+            # self._logger.log(
+            #     "Angle error: %f radians --- %i degrees"
+            #     % (angle_err, math.degrees(angle_err))
+            # )
             # Rotate until within acceptable error or exceeded.
             if abs(angle_err) < EPS or angle_err * initial_rotation_required < 0:
                 stop()

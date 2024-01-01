@@ -72,6 +72,7 @@ class ActionClientInterface:
         """
         self._logger.log("Waiting for result...")
         self._action_client.wait_for_result()
+        self._logger.log("Action finished with status: %i" % self._action_client.get_state())
 
     def shut_down(self):
         """

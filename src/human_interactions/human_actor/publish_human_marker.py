@@ -15,7 +15,7 @@ def parse_pose(string):
     return pose
 
 
-def get_marker(pose):
+def get_marker(pose, color=None):
     marker = Marker()
     marker.header.stamp = rospy.Time.now()
     marker.header.frame_id = "/map"
@@ -27,7 +27,7 @@ def get_marker(pose):
 
     marker.pose = pose
     marker.scale = Vector3(1.0, 1.0, 1.0)
-    marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
+    marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0) if not color else ColorRGBA(*color)
 
     marker.mesh_resource = rospy.get_param("human_rviz_model")
 
@@ -39,8 +39,11 @@ if __name__ == "__main__":
 
     marker_publisher = rospy.Publisher(rospy.get_param("~topic"), Marker, queue_size=10)
     pose = parse_pose(rospy.get_param("~pose"))
+    marker_color = rospy.get_param('~color', None)
+    if marker_color is not None:
+        marker_color = [float(value) for value in marker_color.split()]
 
     rate = rospy.Rate(1)  # 1 Hz
     while not rospy.is_shutdown():
-        marker_publisher.publish(get_marker(pose))
+        marker_publisher.publish(get_marker(pose, marker_color))
         rate.sleep()

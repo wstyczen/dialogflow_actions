@@ -382,7 +382,7 @@ class MoveToHumanActionServer:
             while not self._move_base_client.wait_for_result(rospy.Duration(0.5)):
                 self.publish_feedback()
 
-            if self._move_base_client.get_state() == 3: # SUCCEEDED = 3
+            if self._move_base_client.get_state() == 3:  # SUCCEEDED = 3
                 self.move_head()
                 self.publish_result("success")
             else:
