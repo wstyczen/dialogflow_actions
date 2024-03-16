@@ -1,10 +1,16 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- Room 012 sim -->
+  <!-- Tiago harmoniser -->
+  <include file="$(find tasker)/launch/tiago_harmoniser_gazebo.launch" />
+
+  <!-- Room 012 RVIZ + Gazebo sim -->
   <include file="$(find tiago_sim_integration)/launch/tiago_navigation_public_012_new.launch" />
 
-  <!-- Post human actor pose & show in rviz. -->
-  <include file="$(find human_interactions)/launch/human_actor.launch" />
+  <!-- Post actors' markers & poses -->
+  <include file="$(find human_interactions)/launch/human_actor.launch" >
+    <arg name="keeper" value="keeper_sim" />
+    <arg name="speaker" value="speaker_sim" />
+  </include>
 
   <!-- Run human visibility detection. -->
   <include file="$(find human_interactions)/launch/human_visibility_detection.launch" />

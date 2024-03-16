@@ -3,14 +3,20 @@
   <!-- <env name="ROS_MASTER_URI" value="http://192.168.18.66:11311" /> -->
   <!-- <env name="ROS_IP" value="192.168.61.146" /> -->
 
-  <!-- Apparently this rviz config file should be run for Rico to navigate properly. -->
+  <!-- Tiago harmoniser -->
+  <include file="$(find tasker)/launch/tiago_harmoniser_real.launch" />
+
+  <!-- RVIZ visualization -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tiago_2dnav)/config/rviz/navigation_public_sim.rviz" />
+
+  <!-- Post actors' markers & poses -->
+  <include file="$(find human_interactions)/launch/human_actor.launch" >
+    <arg name="keeper" value="keeper" />
+    <arg name="speaker" value="speaker" />
+  </include>
 
   <!-- Disable automatic head movement before launching action servers -->
   <param name="disable_auto_head_movement" type="bool" value="true" />
-
-  <!-- Post human actor pose & show in rviz. -->
-  <include file="$(find human_interactions)/launch/human_actor.launch" />
 
   <!-- Run human visibility detection. -->
   <include file="$(find human_interactions)/launch/human_visibility_detection.launch" />
