@@ -9,14 +9,4 @@
   <include file="$(find tasker)/launch/control_human.launch" >
     <arg name="actor_name" value="$(arg speaker)" />
   </include>
-
-  <node name="publish_keeper_pose" pkg="human_interactions" type="publish_human_pose.py" output="screen">
-    <param name="actor_name" value="$(arg keeper)" />
-    <param name="topic" value="keeper_pose" />
-  </node>
-
-  <node name="publish_speaker_pose" pkg="human_interactions" type="publish_human_pose.py" output="screen">
-    <param name="actor_name" value="$(arg speaker)" />
-    <param name="topic" value="speaker_pose" />
-  </node>
 </launch>
