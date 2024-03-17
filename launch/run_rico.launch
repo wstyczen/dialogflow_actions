@@ -3,6 +3,9 @@
   <!-- <env name="ROS_MASTER_URI" value="http://192.168.18.66:11311" /> -->
   <!-- <env name="ROS_IP" value="192.168.61.146" /> -->
 
+  <!-- Frame of person giving commands -->
+  <param name="human_tf" value="speaker" />
+
   <!-- Tiago harmoniser -->
   <include file="$(find tasker)/launch/tiago_harmoniser_real.launch" />
 

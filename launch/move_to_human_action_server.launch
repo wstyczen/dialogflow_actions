@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- Args -->
-    <arg name="human_tf" value="human_pose" />
     <!-- Tfs -->
     <param name="robot_base_tf" type="string" value="base_link" />
-    <param name="human_tf" type="string" value="$(arg human_tf)" />
     <param name="point_head_tf" type="string" value="/head_controller/point_head_action/tilt_link" />
     <!-- Actions & services -->
     <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />

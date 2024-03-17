@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- Arguments -->
-    <arg name="human_tf" value="human_pose" />
     <!-- Actions -->
     <param name="turn_to_human_action_name" type="string" value="/turn_to_human" />
     <param name="joy_priority_action" type="string" value="/joy_priority_action" />
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
     <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
     <!-- Frames -->
-    <param name="human_tf" type="string" value="$(arg human_tf)" />
+    <!-- Default value, can be dynamically set from another node -->
+    <param name="human_tf" type="string" value="speaker_sim" />
     <param name="robot_torso_tf" type="string" value="torso_lift_link" />
     <param name="robot_head_tf" type="string" value="head_2_link" />
     <param name="robot_base_tf" type="string" value="base_link" />

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+  <!-- Frame of person giving commands -->
+  <param name="human_tf" value="speaker_sim" />
+
   <!-- Tiago harmoniser -->
   <include file="$(find tasker)/launch/tiago_harmoniser_gazebo.launch" />
 

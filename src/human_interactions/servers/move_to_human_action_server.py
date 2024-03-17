@@ -44,7 +44,6 @@ class MoveToHumanActionServer:
         _head_controller (HeadController): For controlling the robot's head movement.
         _move_base_planner (Planner): Provides a trajectory to reach a goal pose.
         _move_base_client (actionlib.SimpleActionClient): The MoveBase action client.
-        _human_pose_topic (str): The topic to use for getting the pose of human.
         _distance_from_human (float): The desired distance from the human.
     """
 
@@ -96,7 +95,6 @@ class MoveToHumanActionServer:
         )
 
         # Initalize goal variables with defaults.
-        self._human_pose_topic = rospy.get_param("human_tf")
         self._distance_from_human = rospy.get_param("default_distance_from_human")
 
         self._logger.log("%s server initialization complete." % self._action_name)
@@ -217,8 +215,7 @@ class MoveToHumanActionServer:
             Optional[Pose]: The destination pose for the robot,
                 or None if it can't be determined.
         """
-
-        human_pose = self.get_pose(self._human_pose_topic, "map")
+        human_pose = self.get_pose(rospy.get_param("human_tf"), "map")
         if not human_pose:
             self._logger.log("Can't determine human pose, aborting.", LogLevel.ERROR)
             return
@@ -329,7 +326,7 @@ class MoveToHumanActionServer:
         Move the robot's head to face the human.
         """
         self._logger.log("Moving head.")
-        pose = self.get_pose(self._human_pose_topic, rospy.get_param("robot_base_tf"))
+        pose = self.get_pose(rospy.get_param("human_tf"), rospy.get_param("robot_base_tf"))
         if not pose:
             self._logger.log("Can't determine pose, aborting.", LogLevel.ERROR)
             return
@@ -353,20 +350,16 @@ class MoveToHumanActionServer:
             self.publish_result("failure")
             return
 
-        # If provided override the defaults with the values from goal.
-        human_pose_topic = goal.human_pose_topic.data
-        if len(human_pose_topic) > 0:
-            self._human_pose_topic = human_pose_topic
         distance = goal.distance.data
         if distance > 0.0:
             self._distance_from_human = distance
         self._logger.log(
             "Received goal: {human pose topic: '%s', distance: %f}"
-            % (human_pose_topic, distance)
+            % (rospy.get_param("human_tf"), distance)
         )
         self._logger.log(
-            "Used values: {human pose topic: '%s', distance: %f}"
-            % (self._human_pose_topic, self._distance_from_human)
+            "Used goal: {human pose topic: '%s', distance: %f}"
+            % (rospy.get_param("human_tf"), self._distance_from_human)
         )
 
         self._head_controller.reset()
