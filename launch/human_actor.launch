@@ -3,10 +3,18 @@
   <arg name="keeper" default="keeper"/>
   <arg name="senior" default="senior"/>
 
-  <include file="$(find tasker)/launch/control_human.launch" >
-    <arg name="actor_name" value="$(arg keeper)" />
-  </include>
-  <include file="$(find tasker)/launch/control_human.launch" >
-    <arg name="actor_name" value="$(arg senior)" />
-  </include>
+  <!--
+  Has to be launched with different namespaces to work properly (otherwise the
+  markers are published to the same topic and aren't displayed properly)
+  -->
+  <group ns="keeper">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="$(arg keeper)" />
+    </include>
+  </group>
+  <group ns="senior">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="$(arg senior)" />
+    </include>
+  </group>
 </launch>
