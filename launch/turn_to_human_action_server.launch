@@ -7,7 +7,6 @@
     <param name="disable_autohead_action" type="string" value="/pal_head_manager/disable" />
     <!-- Frames -->
     <!-- Default value, can be dynamically set from another node -->
-    <param name="human_tf" type="string" value="speaker_sim" />
     <param name="robot_torso_tf" type="string" value="torso_lift_link" />
     <param name="robot_head_tf" type="string" value="head_2_link" />
     <param name="robot_base_tf" type="string" value="base_link" />

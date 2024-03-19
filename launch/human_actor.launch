@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="keeper" default="keeper"/>
-  <arg name="speaker" default="speaker"/>
+  <arg name="senior" default="senior"/>
 
   <include file="$(find tasker)/launch/control_human.launch" >
     <arg name="actor_name" value="$(arg keeper)" />
   </include>
   <include file="$(find tasker)/launch/control_human.launch" >
-    <arg name="actor_name" value="$(arg speaker)" />
+    <arg name="actor_name" value="$(arg senior)" />
   </include>
 </launch>

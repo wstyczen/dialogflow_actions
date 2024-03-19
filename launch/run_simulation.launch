@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <!-- Frame of person giving commands -->
-  <param name="human_tf" value="speaker_sim" />
+  <param name="human_tf" value="senior_sim" />
 
   <!-- Tiago harmoniser -->
   <include file="$(find tasker)/launch/tiago_harmoniser_gazebo.launch" />
@@ -12,7 +12,7 @@
   <!-- Post actors' markers & poses -->
   <include file="$(find human_interactions)/launch/human_actor.launch" >
     <arg name="keeper" value="keeper_sim" />
-    <arg name="speaker" value="speaker_sim" />
+    <arg name="senior" value="senior_sim" />
   </include>
 
   <!-- Run human visibility detection. -->
