@@ -23,7 +23,7 @@ class Planner:
 
         self._logger.log("Planner ready.")
 
-    def get_plan(self, start_pose, goal_pose, tolerance=0.05):
+    def get_plan(self, start_pose, goal_pose, tolerance=0.1):
         """
         Request a navigation plan from the MoveBase plan service to the given
         destination.

@@ -79,7 +79,7 @@ class HeadController:
         goal.max_velocity = rospy.get_param("head_rotation_velocity")
 
         self._point_head_action_server.send_goal(goal)
-        self._point_head_action_server.wait_for_result()
+        self._point_head_action_server.wait_for_result(timeout=rospy.Duration(3.0))
 
         return True
 

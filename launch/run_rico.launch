@@ -18,9 +18,6 @@
     <arg name="senior" value="senior" />
   </include>
 
-  <!-- Disable automatic head movement before launching action servers -->
-  <param name="disable_auto_head_movement" type="bool" value="true" />
-
   <!-- Run human visibility detection. -->
   <!-- <include file="$(find human_interactions)/launch/human_visibility_detection.launch" /> -->
 </launch>

@@ -332,7 +332,6 @@ class MoveToHumanActionServer:
             return
 
         self._head_controller.point_at(pose.position)
-        self._head_controller.wait_till_idle()
 
     def execute_callback(self, goal):
         """
