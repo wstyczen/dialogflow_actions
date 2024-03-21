@@ -96,7 +96,7 @@ class MoveToHumanActionServer:
         )
 
         # Initalize goal variables with defaults.
-        self._requested_distance_from_human = rospy.get_param("default_distance_from_human")
+        self._requested_distance_from_human = rospy.get_param("optimal_distance_to_human")
 
         # Regularly publish current distance from the human.
         self._distance_from_human_publisher = rospy.Publisher(rospy.get_param('current_distance_from_human_topic'), Float64, queue_size=10)
