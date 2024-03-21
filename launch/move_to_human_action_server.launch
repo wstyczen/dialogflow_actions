@@ -10,6 +10,7 @@
     <param name="point_head_action" type="string" value="/head_controller/point_head_action" />
     <!-- Topics -->
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
+    <param name="current_distance_from_human_topic" type="string" value="/distance_from_speaker" />
     <!-- Constants -->
     <param name="head_rotation_velocity" type="double" value="0.4" />
     <param name="default_distance_from_human" type="double" value="1.0" />

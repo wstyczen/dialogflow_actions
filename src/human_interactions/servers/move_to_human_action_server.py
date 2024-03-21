@@ -16,7 +16,7 @@ from human_interactions.msg import (
 )
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
-from std_msgs.msg import String
+from std_msgs.msg import String, Float64
 
 # Local scripts
 from human_interactions.utility.logger import ActionServerLogger, Action, LogLevel
@@ -44,7 +44,8 @@ class MoveToHumanActionServer:
         _head_controller (HeadController): For controlling the robot's head movement.
         _move_base_planner (Planner): Provides a trajectory to reach a goal pose.
         _move_base_client (actionlib.SimpleActionClient): The MoveBase action client.
-        _distance_from_human (float): The desired distance from the human.
+        _requested_distance_from_human (float): The desired distance from the human.
+        _current_distance_from_human (float): The current distance between robot and human.
     """
 
     def __init__(self):
@@ -95,7 +96,11 @@ class MoveToHumanActionServer:
         )
 
         # Initalize goal variables with defaults.
-        self._distance_from_human = rospy.get_param("default_distance_from_human")
+        self._requested_distance_from_human = rospy.get_param("default_distance_from_human")
+
+        # Regularly publish current distance from the human.
+        self._distance_from_human_publisher = rospy.Publisher(rospy.get_param('current_distance_from_human_topic'), Float64, queue_size=10)
+        rospy.Timer(rospy.Duration(1.0), self._publish_distance_from_human_callback)
 
         self._logger.log("%s server initialization complete." % self._action_name)
         self._initialized = True
@@ -108,6 +113,13 @@ class MoveToHumanActionServer:
             message (Odometry): odometry message.
         """
         self._current_odom = message
+
+    def _publish_distance_from_human_callback(self, _):
+        human_position_in_robot_frame = self._tf_provider.get_tf(
+            rospy.get_param("human_tf"), "base_link"
+        ).translation
+        distance = math.sqrt((human_position_in_robot_frame.x) ** 2 + (human_position_in_robot_frame.y) ** 2)
+        self._distance_from_human_publisher.publish(Float64(distance))
 
     def publish_feedback(self):
         """
@@ -224,13 +236,13 @@ class MoveToHumanActionServer:
 
         self._logger.log(
             "Choosing an optimal destination %.2fm from the human. Using heuristic: %r."
-            % (self._distance_from_human, use_heuristic)
+            % (self._requested_distance_from_human, use_heuristic)
         )
         # Generate points with the requested distance around the human
         # position to choose from.
         human_position = human_pose.position
         candidates = self.get_points_around(
-            human_position, self._distance_from_human, num_candidates
+            human_position, self._requested_distance_from_human, num_candidates
         )
         # Function to calculate the final orientation the robot should have
         # to end up facing the human based on their relative position.
@@ -351,14 +363,14 @@ class MoveToHumanActionServer:
 
         distance = goal.distance.data
         if distance > 0.0:
-            self._distance_from_human = distance
+            self._requested_distance_from_human = distance
         self._logger.log(
             "Received goal: {human pose topic: '%s', distance: %f}"
             % (rospy.get_param("human_tf"), distance)
         )
         self._logger.log(
             "Used goal: {human pose topic: '%s', distance: %f}"
-            % (rospy.get_param("human_tf"), self._distance_from_human)
+            % (rospy.get_param("human_tf"), self._requested_distance_from_human)
         )
 
         self._head_controller.reset()
