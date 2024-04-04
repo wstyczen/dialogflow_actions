@@ -14,8 +14,12 @@ from control_msgs.msg import (
 )
 
 # Local scripts
-from logger import Logger, LogLevel
-from utils import wait_until_server_ready
+try:
+    from human_interactions.utility.logger import Logger, LogLevel
+    from human_interactions.utility.utils import wait_until_server_ready
+except:
+    from logger import Logger, LogLevel
+    from utils import wait_until_server_ready
 
 
 class HeadController:
