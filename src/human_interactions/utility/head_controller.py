@@ -6,9 +6,15 @@ from actionlib import SimpleActionClient, GoalStatus
 from geometry_msgs.msg import Point, Vector3
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from pal_common_msgs.msg import DisableAction, DisableGoal
+from trajectory_msgs.msg import JointTrajectoryPoint
+from control_msgs.msg import (
+    FollowJointTrajectoryAction,
+    JointTrajectoryControllerState,
+    FollowJointTrajectoryGoal,
+)
 
 # Local scripts
-from logger import Logger
+from logger import Logger, LogLevel
 from utils import wait_until_server_ready
 
 
@@ -49,6 +55,73 @@ class HeadController:
                 rospy.get_param("disable_autohead_action"),
                 self._logger,
             )
+
+        self._joint_trajectory_client = SimpleActionClient(
+            "head_controller/follow_joint_trajectory", FollowJointTrajectoryAction
+        )
+        wait_until_server_ready(
+            self._joint_trajectory_client,
+            "head_controller/follow_joint_trajectory",
+            self._logger,
+        )
+
+        self._head_position_subscriber = rospy.Subscriber(
+            "/head_controller/state",
+            JointTrajectoryControllerState,
+            self.__current_head_position_callback,
+        )
+        self._current_head_positions = None
+        self._saved_head_positions = None
+
+    def __current_head_position_callback(self, msg):
+        self._current_head_positions = msg.actual.positions
+
+    def save_current_head_positions(self):
+        if self._current_head_positions is None:
+            self._logger.log(
+                "Current head positions unavailable.", level=LogLevel.WARNING
+            )
+            return
+
+        self._logger.log(
+            "Saving current head positions: [{}, {}].".format(
+                self._current_head_positions[0], self._current_head_positions[1]
+            )
+        )
+        self._saved_head_positions = self._current_head_positions
+
+    def return_to_saved_head_positions(self):
+        assert self._saved_head_positions is not None, "No saved position available."
+
+        self._logger.log(
+            "Returning to previous head positions. Current joint states: [{}, {}]. Saved joint states: [{}, {}].".format(
+                self._current_head_positions[0],
+                self._current_head_positions[1],
+                self._saved_head_positions[0],
+                self._saved_head_positions[1],
+            )
+        )
+        goal = FollowJointTrajectoryGoal()
+        jtp = JointTrajectoryPoint()
+        jtp.time_from_start = rospy.Duration(2)
+        # First link
+        goal.trajectory.joint_names.append("head_1_joint")
+        jtp.positions.append(self._saved_head_positions[0])
+        # Second link
+        goal.trajectory.joint_names.append("head_2_joint")
+        jtp.positions.append(self._saved_head_positions[1])
+
+        goal.trajectory.points.append(jtp)
+
+        goal.trajectory.header.stamp = rospy.Time.now()
+        self._joint_trajectory_client.send_goal(goal)
+
+        self._joint_trajectory_client.wait_for_result()
+        self._logger.log(
+            "Result: [{}, {}].".format(
+                self._current_head_positions[0], self._current_head_positions[1]
+            )
+        )
 
     def disable_automatic_head_movement(self):
         self._logger.log("Disabling automatic head movement.")

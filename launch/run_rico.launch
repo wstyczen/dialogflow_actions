@@ -6,6 +6,9 @@
   <!-- Frame of person giving commands -->
   <param name="human_tf" value="senior" />
 
+  <!-- Disable automatic head movement -->
+  <param name="disable_auto_head_movement" type="bool" value="true" />
+
   <!-- Tiago harmoniser -->
   <include file="$(find tasker)/launch/tiago_harmoniser_real.launch" />
 

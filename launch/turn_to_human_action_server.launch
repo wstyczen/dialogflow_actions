@@ -15,7 +15,7 @@
     <param name="odometry_topic" type="string" value="/mobile_base_controller/odom" />
     <param name="joint_state_topic" type="string" value="/joint_states" />
     <param name="joy_priority_topic" type="string" value="/joy_priority" />
-    <param name="command_velocity_topic" type="string" value="/joy_vel" />
+    <param name="command_velocity_topic" type="string" value="/mobile_base_controller/cmd_vel" />
     <!-- Constants -->
     <param name="use_joy_action" type="bool" value="true" />
     <param name="torso_rotation_velocity" type="double" value="0.8" />
