@@ -98,7 +98,7 @@ class TFProvider:
 
         pose.position.x = transform.translation.x
         pose.position.y = transform.translation.y
-        pose.position.z = 1.5 # Change to assumed human face height.
+        pose.position.z = 1.5  # Change to assumed human face height.
         pose.orientation = transform.rotation
 
         return pose

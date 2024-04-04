@@ -96,10 +96,14 @@ class MoveToHumanActionServer:
         )
 
         # Initalize goal variables with defaults.
-        self._requested_distance_from_human = rospy.get_param("optimal_distance_to_human")
+        self._requested_distance_from_human = rospy.get_param(
+            "optimal_distance_to_human"
+        )
 
         # Regularly publish current distance from the human.
-        self._distance_from_human_publisher = rospy.Publisher(rospy.get_param('current_distance_from_human_topic'), Float64, queue_size=10)
+        self._distance_from_human_publisher = rospy.Publisher(
+            rospy.get_param("current_distance_from_human_topic"), Float64, queue_size=10
+        )
         rospy.Timer(rospy.Duration(1.0), self._publish_distance_from_human_callback)
 
         self._logger.log("%s server initialization complete." % self._action_name)
@@ -118,7 +122,10 @@ class MoveToHumanActionServer:
         human_position_in_robot_frame = self._tf_provider.get_tf(
             rospy.get_param("human_tf"), "base_link"
         ).translation
-        distance = math.sqrt((human_position_in_robot_frame.x) ** 2 + (human_position_in_robot_frame.y) ** 2)
+        distance = math.sqrt(
+            (human_position_in_robot_frame.x) ** 2
+            + (human_position_in_robot_frame.y) ** 2
+        )
         self._distance_from_human_publisher.publish(Float64(distance))
 
     def publish_feedback(self):
@@ -338,7 +345,9 @@ class MoveToHumanActionServer:
         Move the robot's head to face the human.
         """
         self._logger.log("Moving head.")
-        pose = self.get_pose(rospy.get_param("human_tf"), rospy.get_param("robot_base_tf"))
+        pose = self.get_pose(
+            rospy.get_param("human_tf"), rospy.get_param("robot_base_tf")
+        )
         if not pose:
             self._logger.log("Can't determine pose, aborting.", LogLevel.ERROR)
             return

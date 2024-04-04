@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     marker_publisher = rospy.Publisher(rospy.get_param("~topic"), Marker, queue_size=10)
     pose = parse_pose(rospy.get_param("~pose"))
-    marker_color = rospy.get_param('~color', None)
+    marker_color = rospy.get_param("~color", None)
     if marker_color is not None:
         marker_color = [float(value) for value in marker_color.split()]
 
