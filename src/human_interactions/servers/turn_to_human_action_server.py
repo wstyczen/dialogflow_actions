@@ -153,11 +153,40 @@ class TurnToHumanActionServer:
         Returns:
             float: The required angle in radians.
         """
+        import numpy as np
+        def rotate_point(x, y, theta):
+            # Convert rotation angle from degrees to radians
+            theta_rad = np.radians(theta)
+
+            # Define the rotation matrix for a 2D rotation around the origin
+            rotation_matrix = np.array([
+                [np.cos(theta_rad), -np.sin(theta_rad)],
+                [np.sin(theta_rad), np.cos(theta_rad)]
+            ])
+
+            # Create a column vector representing the original point
+            point_vector = np.array([[x], [y]])
+
+            # Apply the rotation matrix to the point vector
+            rotated_point_vector = np.dot(rotation_matrix, point_vector)
+
+            # Extract the rotated coordinates
+            rotated_x = rotated_point_vector[0, 0]
+            rotated_y = rotated_point_vector[1, 0]
+
+            return rotated_x, rotated_y
+
         human_position_in_robot_frame = self._tf_provider.get_tf(
             rospy.get_param("human_tf"), RobotLink.TORSO.value
         ).translation
+
+        x = human_position_in_robot_frame.x
+        y = human_position_in_robot_frame.y
+
+        x, y = rotate_point(x, y, rospy.get_param("additional_rotation", default=0))
+
         return math.atan2(
-            human_position_in_robot_frame.y, human_position_in_robot_frame.x
+            y, x
         )
 
     def publish_feedback(self, link):
@@ -308,15 +337,15 @@ class TurnToHumanActionServer:
         # out of its range of motion start by moving the the torso.
         max_head_rotation = rospy.get_param("max_head_rotation")
         used_link = None
-        if abs(required_angle) > max_head_rotation:
-            self._logger.log("Moving torso.")
-            used_link = "torso"
-            success = self.rotate_torso()
-        else:
-            used_link = "head"
+        # if abs(required_angle) > max_head_rotation:
+        self._logger.log("Moving torso.")
+        used_link = "torso"
+        success = self.rotate_torso()
+        # else:
+        #     used_link = "head"
 
-        self._logger.log("Moving head.")
-        self.point_head_at_human()
+        # self._logger.log("Moving head.")
+        # self.point_head_at_human()
 
         if success:
             self.publish_result("success", used_link)
