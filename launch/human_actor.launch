@@ -17,4 +17,9 @@
       <arg name="actor_name" value="$(arg senior)" />
     </include>
   </group>
+  <!-- Keeper position is also be published without namespace, since it used -->
+  <!-- in the task to move to their position. -->
+  <include file="$(find tasker)/launch/control_human.launch">
+    <arg name="actor_name" value="$(arg keeper)" />
+  </include>
 </launch>
