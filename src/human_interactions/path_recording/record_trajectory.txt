@@ -1,0 +1,50 @@
+# Setup
+roslaunch tasker tiago_harmoniser_real.launch
+roslaunch human_interactions run_rico.launch
+roslaunch human_interactions test_actors.launch
+roslaunch human_interactions action_servers.launch
+
+# Move to starting position
+rostopic pub /move_base/goal move_base_msgs/MoveBaseActionGoal "header:
+  seq: 0
+  stamp:
+    secs: 0
+    nsecs: 0
+  frame_id: ''
+goal_id:
+  stamp:
+    secs: 0
+    nsecs: 0
+  id: ''
+goal:
+  target_pose:
+    header:
+      seq: 0
+      stamp:
+        secs: 0
+        nsecs: 0
+      frame_id: 'map'
+    pose:
+      position:
+        x: 10
+        y: 7.6
+        z: 0.0
+      orientation:
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0"
+
+# Select actor
+rosparam set human_tf test<n>
+
+# Set actor index
+rosparam set index <n>
+
+# Start recording trajectory
+rosrun human_interactions record_trajectory.py
+
+# Move to selected person
+roslaunch human_interactions move_to_human_action_client.launch
+
+# Stop recording before moving again ^^ (Ctrl + C)

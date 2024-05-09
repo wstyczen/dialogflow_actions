@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path1" output="screen">
+    <param name="index" value="1" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path2" output="screen">
+    <param name="index" value="2" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path3" output="screen">
+    <param name="index" value="3" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path4" output="screen">
+    <param name="index" value="4" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path5" output="screen">
+    <param name="index" value="5" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path6" output="screen">
+    <param name="index" value="6" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path_from_file7" output="screen">
+    <param name="index" value="7" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path8" output="screen">
+    <param name="index" value="8" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path9" output="screen">
+    <param name="index" value="9" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path10" output="screen">
+    <param name="index" value="10" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path11" output="screen">
+    <param name="index" value="11" />
+  </node>
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path12" output="screen">
+    <param name="index" value="12" />
+  </node>
+</launch>

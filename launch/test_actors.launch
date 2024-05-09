@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<launch>
+  <group ns="test1">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test1" />
+    </include>
+  </group>
+  <group ns="test2">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test2" />
+    </include>
+  </group>
+  <group ns="test3">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test3" />
+    </include>
+  </group>
+  <group ns="test4">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test4" />
+    </include>
+  </group>
+  <group ns="test5">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test5" />
+    </include>
+  </group>
+  <group ns="test6">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test6" />
+    </include>
+  </group>
+  <group ns="test7">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test7" />
+    </include>
+  </group>
+  <group ns="test8">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test8" />
+    </include>
+  </group>
+  <group ns="test9">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test9" />
+    </include>
+  </group>
+  <group ns="test10">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test10" />
+    </include>
+  </group>
+  <group ns="test11">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test11" />
+    </include>
+  </group>
+  <group ns="test12">
+    <include file="$(find tasker)/launch/control_human.launch">
+      <arg name="actor_name" value="test12" />
+    </include>
+  </group>
+</launch>

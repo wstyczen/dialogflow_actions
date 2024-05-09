@@ -4,7 +4,7 @@
   <arg name="senior" default="senior"/>
 
   <!--
-  Has to be launched with different namespaces to work properly (otherwise the
+  Has to be launched with different namespaces to work (otherwise the
   markers are published to the same topic and aren't displayed properly)
   -->
   <group ns="keeper">
