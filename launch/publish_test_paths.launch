@@ -18,7 +18,7 @@
   <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path6" output="screen">
     <param name="index" value="6" />
   </node>
-  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path_from_file7" output="screen">
+  <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path7" output="screen">
     <param name="index" value="7" />
   </node>
   <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path8" output="screen">
@@ -34,6 +34,42 @@
     <param name="index" value="11" />
   </node>
   <node pkg="human_interactions" type="publish_path_from_file.py" name="publish_path12" output="screen">
+    <param name="index" value="12" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow1" output="screen">
+    <param name="index" value="1" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow2" output="screen">
+    <param name="index" value="2" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow3" output="screen">
+    <param name="index" value="3" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow4" output="screen">
+    <param name="index" value="4" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow5" output="screen">
+    <param name="index" value="5" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow6" output="screen">
+    <param name="index" value="6" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow7" output="screen">
+    <param name="index" value="7" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow8" output="screen">
+    <param name="index" value="8" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow9" output="screen">
+    <param name="index" value="9" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow10" output="screen">
+    <param name="index" value="10" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow11" output="screen">
+    <param name="index" value="11" />
+  </node>
+  <node pkg="human_interactions" type="publish_final_orientation_marker.py" name="publish_arrow12" output="screen">
     <param name="index" value="12" />
   </node>
 </launch>
