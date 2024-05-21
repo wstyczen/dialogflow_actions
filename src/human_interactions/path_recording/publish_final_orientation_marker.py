@@ -31,13 +31,13 @@ def create_arrow_marker(pose):
     marker.pose.orientation.w = pose['orientation']['w']
 
     # Set the scale of the arrow
-    marker.scale.x = 0.3 # length
-    marker.scale.y = 0.02 # width of shaft
+    marker.scale.x = 0.5 # length
+    marker.scale.y = 0.03 # width of shaft
     marker.scale.z = 0.05 # width of head
 
     # Set the color (r, g, b, a)
-    marker.color.r = 0.0
-    marker.color.g = 0.0
+    marker.color.r = 0.1
+    marker.color.g = 1.0
     marker.color.b = 0.0
     marker.color.a = 1.0
 
